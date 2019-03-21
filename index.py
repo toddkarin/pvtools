@@ -23,6 +23,8 @@ from dash.dependencies import Input, Output, State
 # import datetime
 
 from app import app
+server = app.server
+
 
 # session_id = str(uuid.uuid4())
 # mapbox_access_token = 'pk.eyJ1IjoidG9kZGthcmluIiwiYSI6Ik1aSndibmcifQ.hwkbjcZevafx2ApulodXaw'
@@ -92,6 +94,7 @@ navbar = dbc.NavbarSimple(
     brand_href="/",
     sticky="top",
 )
+
 
 
 
