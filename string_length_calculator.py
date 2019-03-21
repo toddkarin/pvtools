@@ -736,25 +736,25 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
     # print(info_df)
 
 
-    # Make a directory for saving session files.
-    # if not os.path.isdir(os.path.join('downloads',session_id)):
-    #     os.mkdir(os.path.join('downloads',session_id))
-    save_filename = os.path.join('downloads','maxvoc_data.csv')
-    info_filename = os.path.join('downloads','maxvoc_info.csv')
-    # save_filename = 'maxvoc_data.csv'
-    # info_filename = 'maxvoc_info.csv'
-    # temp_filename = os.path.join('downloads', session_id, 'maxvoc_temp.pkl')
-    print('Saving data as ' + str(save_filename) + '...')
-    with open(save_filename,'w') as f:
-        f.write(info_df.to_csv(index=False))
-        if len(generate_datafile)>0:
-            f.write(df.to_csv(float_format='%.2f'))
-
-    with open(info_filename,'w') as f:
-        # f.write('hello')
-        # f.write(info_df.to_csv(index=False))
-        f.write(summary)
-    print('done')
+    # # Make a directory for saving session files.
+    # # if not os.path.isdir(os.path.join('downloads',session_id)):
+    # #     os.mkdir(os.path.join('downloads',session_id))
+    # save_filename = os.path.join('downloads','maxvoc_data.csv')
+    # info_filename = os.path.join('downloads','maxvoc_info.csv')
+    # # save_filename = 'maxvoc_data.csv'
+    # # info_filename = 'maxvoc_info.csv'
+    # # temp_filename = os.path.join('downloads', session_id, 'maxvoc_temp.pkl')
+    # print('Saving data as ' + str(save_filename) + '...')
+    # with open(save_filename,'w') as f:
+    #     f.write(info_df.to_csv(index=False))
+    #     if len(generate_datafile)>0:
+    #         f.write(df.to_csv(float_format='%.2f'))
+    #
+    # with open(info_filename,'w') as f:
+    #     # f.write('hello')
+    #     # f.write(info_df.to_csv(index=False))
+    #     f.write(summary)
+    # print('done')
 
 
     # Make histograms
