@@ -3,6 +3,7 @@ certifi==2019.3.9
 chardet==3.0.4
 Click==7.0
 dash==0.39.0
+dash-bootstrap-components==0.3.5
 dash-core-components==0.44.0
 dash-html-components==0.14.0
 dash-renderer==0.20.0
@@ -11,6 +12,7 @@ decorator==4.4.0
 enum34==1.1.6
 Flask==1.0.2
 Flask-Compress==1.4.0
+functools32==3.2.3.post2
 gunicorn==19.9.0
 idna==2.8
 ipython-genutils==0.2.0

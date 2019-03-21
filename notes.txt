@@ -1,2 +1,11 @@
 Started with Heroku install instructions.
  
+
+--
+
+pip install dash
+pip install plotly
+pip install dash-bootstrap-components
+pip install gunicorn
+
+venv
