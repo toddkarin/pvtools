@@ -46,7 +46,7 @@ import home
 #
 #
 
-NSRDB_pickle_database = '/Users/toddkarin/Documents/NSRDB_pickle/'
+# NSRDB_pickle_database = '/Users/toddkarin/Documents/NSRDB_pickle/'
 
 
 
@@ -99,7 +99,8 @@ navbar = dbc.NavbarSimple(
               [Input('url', 'pathname')])
 def display_page(pathname):
     if pathname == '/string-length-calculator':
-        body = string_length_calculator.layout
+        body = home.layout
+        # body = string_length_calculator.layout
     elif pathname == '/home':
         body = home.layout
     elif pathname == '/':
