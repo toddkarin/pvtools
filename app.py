@@ -13,6 +13,14 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
 server.secret_key = os.environ.get('secret_key', 'secret')
 
+import home
+
+
+app.layout = html.Div([
+    dcc.Location(id='url', refresh=False),
+    html.Div(id='page-content',children=[home.layout])
+])
+
 
 #
 #
