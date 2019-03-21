@@ -23,6 +23,8 @@ from dash.dependencies import Input, Output, State
 # import datetime
 
 from app import app
+
+# Line is important for Heroku.
 server = app.server
 
 
@@ -31,7 +33,7 @@ server = app.server
 
 
 # import home, string_length_calculator
-import home
+import home, pvcz
 
 # # Cache for saving local files.
 # cache = Cache(app.server, config={
@@ -103,8 +105,10 @@ navbar = dbc.NavbarSimple(
               [Input('url', 'pathname')])
 def display_page(pathname):
     if pathname == '/string-length-calculator':
-        body = home.layout
+        body = pvcz.layout
         # body = string_length_calculator.layout
+    elif pathname == 'PVCZ':
+        body = pvcz.layout
     elif pathname == '/home':
         body = home.layout
     elif pathname == '/':

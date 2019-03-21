@@ -87,7 +87,8 @@ layout = dbc.Container(
 
                             """
                         ),
-                        dbc.Button("Launch Tool", color="secondary")
+                        html.A( dbc.Button("Launch Tool", color="secondary"),
+                                href='PVCZ'),
                         # dcc.Graph(
                         #     figure={"data": [{"x": [1, 2, 3], "y": [1, 4, 9]}]}
                         # ),
