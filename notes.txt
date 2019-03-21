@@ -1,4 +1,4 @@
-This is the directory storing Heroku files.
+This is the directory storing Heroku files.	
 
 --
 
@@ -11,6 +11,9 @@ pip install dash
 pip install plotly
 pip install dash-bootstrap-components
 pip install gunicorn
+pip install pvlib
+
+
 
 
 --
