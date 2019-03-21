@@ -134,9 +134,10 @@ sandia_modules = pvlib.pvsystem.retrieve_sam('SandiaMod')
 
 # Get filedata for
 if socket.gethostname()[0:6]=='guests':
-    filedata = nsrdbtools.inspect_pickle_database('/Users/toddkarin/Documents/NSRDB_pickle/')
+    # filedata = nsrdbtools.inspect_pickle_database('/Users/toddkarin/Documents/NSRDB_pickle/')
+    filedata = nsrdbtools.inspect_pickle_database('NSRDB_pickle')
 else:
-    filedata = nsrdbtools.inspect_pickle_database('~/NSRDB_pickle')
+    filedata = nsrdbtools.inspect_pickle_database('NSRDB_pickle')
 
 def get_sandia_module_dropdown_list():
     sandia_modules = pvlib.pvsystem.retrieve_sam('SandiaMod')
