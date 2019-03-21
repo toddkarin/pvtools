@@ -13,52 +13,62 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
 server.secret_key = os.environ.get('secret_key', 'secret')
 
-import home
 
 
-header = dbc.Container([
-    dbc.Row([
-        dbc.Col([
-            html.Img(
-                src=app.get_asset_url('LBL_Masterbrand_logo_with_Tagline-01.jpg'),
-                style={'height': 50})
-            ],width=4),
-        dbc.Col([
-            html.Img(
-                src=app.get_asset_url('duramat_logo.png'),
-                style={'height': 50})
-            ],width=4)
-
-        ],justify='between')
-])
-
-navbar = dbc.NavbarSimple(
-    children=[
-        dbc.DropdownMenu(
-            nav=True,
-            in_navbar=True,
-            label="Tools",
-            children=[
-                dbc.DropdownMenuItem("String Length Calculator",href='/string-length-calculator'),
-                dbc.DropdownMenuItem("Photovoltaic Climate Zones"),
-                dbc.DropdownMenuItem(divider=True),
-                dbc.DropdownMenuItem("Documentation"),
-            ],
-        ),
-        dbc.NavItem(dbc.NavLink("Contact", href="#")),
-    ],
-    brand="PVTOOLS",
-    brand_href="/",
-    sticky="top",
-)
+#
+# app.config.suppress_callback_exceptions = True
+# # app.config.suppress_callback_exceptions = False
+# app.css.config.serve_locally = False
+# app.scripts.config.serve_locally = False
+#
 
 
 
-
-app.layout = html.Div([
-    dcc.Location(id='url', refresh=False),
-    html.Div(id='page-content',children=[header, navbar, home.layout])
-])
+# import test_layout
+#
+# header = dbc.Container([
+#     dbc.Row([
+#         dbc.Col([
+#             html.Img(
+#                 src=app.get_asset_url('LBL_Masterbrand_logo_with_Tagline-01.jpg'),
+#                 style={'height': 50})
+#             ],width=4),
+#         dbc.Col([
+#             html.Img(
+#                 src=app.get_asset_url('duramat_logo.png'),
+#                 style={'height': 50})
+#             ],width=4)
+#
+#         ],justify='between')
+# ])
+#
+# navbar = dbc.NavbarSimple(
+#     children=[
+#         dbc.DropdownMenu(
+#             nav=True,
+#             in_navbar=True,
+#             label="Tools",
+#             children=[
+#                 dbc.DropdownMenuItem("String Length Calculator",href='/string-length-calculator'),
+#                 dbc.DropdownMenuItem("Photovoltaic Climate Zones"),
+#                 dbc.DropdownMenuItem(divider=True),
+#                 dbc.DropdownMenuItem("Documentation"),
+#             ],
+#         ),
+#         dbc.NavItem(dbc.NavLink("Contact", href="#")),
+#     ],
+#     brand="PVTOOLS",
+#     brand_href="/",
+#     sticky="top",
+# )
+#
+#
+#
+#
+# app.layout = html.Div([
+#     dcc.Location(id='url', refresh=False),
+#     html.Div(id='page-content',children=[header, navbar, home.layout])
+# ])
 
 
 #

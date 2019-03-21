@@ -102,7 +102,8 @@ layout = dbc.Container(
 # layout = [header, navbar, body]
 
 
-# app.layout = html.Div(layout)
+
 
 if __name__ == "__main__":
+    app.layout = html.Div(layout)
     app.run_server()
