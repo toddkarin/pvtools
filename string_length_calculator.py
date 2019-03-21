@@ -1085,11 +1085,11 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
         html.Details([
             html.Summary('View text summary'),
             html.Div([html.P(s) for s in summary.split('\n')],style={'marginLeft':50})]),
-        html.P(
-            html.A('Download data as csv file', id='download-data',href=save_filename)
-        ),
-        html.A('Download summary as csv file', id='download-summary',
-               href=info_filename),
+        # html.P(
+        #     html.A('Download data as csv file', id='download-data',href=save_filename)
+        # ),
+        # html.A('Download summary as csv file', id='download-summary',
+        #        href=info_filename),
     ]
     print('done')
 
