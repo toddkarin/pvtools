@@ -1,0 +1,2 @@
+Source,Location ID,Elevation,Latitude,Longitude,DHI Units,DNI Units,GHI Units,V_oc Units,Wind Speed Units,interval_in_hours,timedelta_in_years,NSRDB Version,PVLIB Version,PVTools Version,Date Created
+NSRDB,124250,144,37.93,-122.3,w/m2,w/m2,w/m2,V,m/s,0.5,18.008219178082193,v3.0.1,0.6.1,0.0.1,2019-03-21 15:22:51
