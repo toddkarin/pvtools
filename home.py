@@ -59,7 +59,8 @@ layout = dbc.Container(
                             
                             """
                         ),
-                        dbc.Button("Learn More", color="secondary"),
+                        html.A( dbc.Button("Learn More", color="secondary"),
+                                href='about'),
                     ],
                     md=4,
                 ),
@@ -88,7 +89,7 @@ layout = dbc.Container(
                             """
                         ),
                         html.A( dbc.Button("Launch Tool", color="secondary"),
-                                href='PVCZ'),
+                                href='pvcz'),
                         # dcc.Graph(
                         #     figure={"data": [{"x": [1, 2, 3], "y": [1, 4, 9]}]}
                         # ),

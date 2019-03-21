@@ -1,3 +1,7 @@
+This is the directory storing Heroku files.
+
+--
+
 Started with Heroku install instructions.
  
 
@@ -8,4 +12,7 @@ pip install plotly
 pip install dash-bootstrap-components
 pip install gunicorn
 
-venv
+
+--
+
+git push heroku master

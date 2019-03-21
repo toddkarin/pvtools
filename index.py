@@ -33,7 +33,7 @@ server = app.server
 
 
 # import home, string_length_calculator
-import home, pvcz
+import home, pvcz, about, string_length_calculator
 
 # # Cache for saving local files.
 # cache = Cache(app.server, config={
@@ -105,10 +105,12 @@ navbar = dbc.NavbarSimple(
               [Input('url', 'pathname')])
 def display_page(pathname):
     if pathname == '/string-length-calculator':
+        # body = pvcz.layout
+        body = string_length_calculator.layout
+    elif pathname == '/pvcz':
         body = pvcz.layout
-        # body = string_length_calculator.layout
-    elif pathname == 'PVCZ':
-        body = pvcz.layout
+    elif pathname == '/about':
+        body = about.layout
     elif pathname == '/home':
         body = home.layout
     elif pathname == '/':
