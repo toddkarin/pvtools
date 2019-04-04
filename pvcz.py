@@ -1,6 +1,6 @@
 # import dash_core_components as dcc
 # import dash_html_components as html
-# import dash_bootstrap_components as dbc
+import dash_bootstrap_components as dbc
 #
 import app as app
 
@@ -24,7 +24,15 @@ import pandas as pd
 # app = dash.Dash()
 layout = html.Div(children=[
     html.A("download csv", href="/download_csv/"),
+    dbc.Button("Download csv",id='download-button',n_clicks=0),
 ])
+
+
+#
+# @app.callback([],
+#               [Input('download-button','n_clicks')])
+# def update_Voco(n_clicks,results):
+#     print(results)
 
 
 @app.server.route('/download_csv/')

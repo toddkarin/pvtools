@@ -15,43 +15,29 @@ import dash_bootstrap_components as dbc
 import plotly.colors
 import plotly.graph_objs as go
 # import plotly.plotly as py
-# from flask_caching import Cache
+from flask_caching import Cache
 from dash.dependencies import Input, Output, State
 import vocmaxlib
 import numpy as np
 import pvlib
 import nsrdbtools
 import pandas as pd
-import uuid
+# import uuid
 import os
 import flask
 import json
 import time
 import datetime
+import io
+import pvtoolslib
+
 
 from app import app
 
-# external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-
 # mapbox_access_token = 'pk.eyJ1IjoidG9kZGthcmluIiwiYSI6Ik1aSndibmcifQ.hwkbjcZevafx2ApulodXaw'
-
-# app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 # app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-# modules = pvlib.pvsystem.retrieve_sam('cecmod')
-#
-# cache = Cache(app.server, config={
-#     'CACHE_TYPE': 'redis',
-#     # Note that filesystem cache doesn't work on systems with ephemeral
-#     # filesystems like Heroku.
-#     'CACHE_TYPE': 'filesystem',
-#     'CACHE_DIR': 'cache-directory',
-#
-#     # should be equal to maximum number of users on the app at a single time
-#     # higher numbers will store more data in the filesystem / redis cache
-#     'CACHE_THRESHOLD': 200
-# })
 
 # session_id = str(uuid.uuid4())
 
@@ -59,14 +45,14 @@ layout = dbc.Container([
     html.Hr(),
     html.Div([
         html.H1("Photovoltaic Maximum Open Circuit Voltage"),
-        ], style={
+    ], style={
         # 'background-color': 'lightblue',
-                 'width':'100%',
-                 'padding-left':'10px',
-                 'padding-right': '10px',
-                  'textAlign':'center'}),
+        'width': '100%',
+        'padding-left': '10px',
+        'padding-right': '10px',
+        'textAlign': 'center'}),
     html.Hr(),
-    html.Div(str(uuid.uuid4()), id='session-id', style={'display': 'none'}),
+    # html.Div(str(uuid.uuid4()), id='session-id', style={'display': 'none'}),
     html.Div(id='click-data', style={'display': 'none'}),
     html.H2('Overview'),
     # html.H1(
@@ -83,7 +69,7 @@ layout = dbc.Container([
     is calculated using the Sandia PV models [2] as implemented in the open 
     source python library PVLIB [3]. This work is funded by the Duramat 
     consortium [4]. 
-    
+
     """),
     html.H2('Methods'),
     html.P("""The national electric code 2017 lists three different methods 
@@ -97,41 +83,36 @@ layout = dbc.Container([
         temperature using the open-circuit voltage temperature coefficients 
         in accordance with the instructions included in the listing or 
         labeling of the module. 
-        
+
         """),
         html.Li("""690.7(A)(2) Crystalline and multicrystalline modules: For 
         crystalline and multicrystalline silicon modules, the sum of the PV 
         module-rated open-circuit voltage of the series-connected modules 
         corrected for the lowest expected ambient temperature using the 
         correction factor provided in Table 690.7(A). 
-        
+
         """),
         html.Li("""690.7(A)(3) PV systems of 100 kW or larger: For PV systems 
         with a generating capcity of 100 kW or greater, a documented and 
         stamped PV system design, using an industry standard method and 
         provided by a licensed professional electrical engineer, shall be 
         permitted. 
-        
+
         """)
 
-    ],style={'marginLeft':50}),
+    ], style={'marginLeft': 50}),
 
     html.P("""This tool provides information for methods 690.7(A)(1) and 
     690.7(A)(3). For method 690.7(A)(1), The lowest expected ambient 
     temperature is calculated by finding the minimum temperature during 
     daylight hours, defined as GHI>150 W/m^2. 
-    
+
     """),
     html.P("""For method 690.7(A)(3), a full PVLIB model is run using weather 
     data from the selected location and module parameters. Module parameters 
-    are either taken from database values or entered manually 
+    are either taken from database values or entered manually.
 
     """),
-
-    html.P("""Note that method 690.7(A)(3) overrides 690.7(A)(1), so that even 
-
-    """),
-
 
     # html.H2('Simulation Input'),
     html.H2('Weather'),
@@ -151,7 +132,7 @@ layout = dbc.Container([
             html.Td([
                 html.P('Get Data'),
                 dbc.Button(id='get-weather', n_clicks=0,
-                                    children='Show Map')
+                           children='Show Map')
             ])
         ])
     ]),
@@ -165,7 +146,7 @@ layout = dbc.Container([
     #             children='Get Weather Data'),
     html.Div(id='closest-message',
              children='Closest point shown on map'),
-    html.Div(id='location-map',children=[
+    html.Div(id='location-map', children=[
         dcc.Graph(id='map')
     ],
              style={'align': 'left'}),
@@ -174,7 +155,7 @@ layout = dbc.Container([
     html.Label('Choose module to get library values for simulation'),
     dcc.Dropdown(
         id='module_name',
-        options= vocmaxlib.get_sandia_module_dropdown_list(),
+        options=vocmaxlib.get_sandia_module_dropdown_list(),
         value=vocmaxlib.get_sandia_module_dropdown_list()[0]['value'],
         style={'max-width': 500}
     ),
@@ -197,77 +178,76 @@ layout = dbc.Container([
         style={'max-width': 500}
     ),
 
-
     html.Label('Choose fixed tilt or single axis tracker'),
     dbc.Tabs([
         dbc.Tab([
             dbc.Card(
                 dbc.CardBody(
-                [dbc.Label('Surface Tilt (degrees)'),
-                dbc.Input(id='surface_tilt', value='30', type='text',
-                          style={'max-width': 200}),
+                    [dbc.Label('Surface Tilt (degrees)'),
+                     dbc.Input(id='surface_tilt', value='30', type='text',
+                               style={'max-width': 200}),
 
-                dbc.Label('Surface Azimuth (degrees)'),
-                dbc.Input(id='surface_azimuth', value='180', type='text',
-                          style={'max-width': 200})],
-                dbc.FormText("""For module face oriented due South use 180. 
+                     dbc.Label('Surface Azimuth (degrees)'),
+                     dbc.Input(id='surface_azimuth', value='180', type='text',
+                               style={'max-width': 200})],
+                    dbc.FormText("""For module face oriented due South use 180. 
                 For module face oreinted due East use 90"""),
                 )
             )
-            ],tab_id='fixed_tilt',label='Fixed Tilt'),
+        ], tab_id='fixed_tilt', label='Fixed Tilt'),
         dbc.Tab([
             dbc.Card(
                 dbc.CardBody(
-                [dbc.Label('Axis Tilt (degrees)'),
-                dbc.Input(id='axis_tilt', value='0', type='text',
-                          style={'max-width': 200}),
-                dbc.FormText("""The tilt of the axis of rotation (i.e, 
+                    [dbc.Label('Axis Tilt (degrees)'),
+                     dbc.Input(id='axis_tilt', value='0', type='text',
+                               style={'max-width': 200}),
+                     dbc.FormText("""The tilt of the axis of rotation (i.e, 
                 the y-axis defined by axis_azimuth) with respect to 
                 horizontal, in decimal degrees."""),
-                dbc.Label('Axis Azimuth (degrees)'),
-                dbc.Input(id='axis_azimuth', value='0', type='text',
-                          style={'max-width': 200}),
-                dbc.FormText("""A value denoting the compass direction along 
+                     dbc.Label('Axis Azimuth (degrees)'),
+                     dbc.Input(id='axis_azimuth', value='0', type='text',
+                               style={'max-width': 200}),
+                     dbc.FormText("""A value denoting the compass direction along 
                 which the axis of rotation lies. Measured in decimal degrees 
                 East of North."""),
-                dbc.Label('Max Angle (degrees)'),
-                dbc.Input(id='max_angle', value='90', type='text',
-                          style={'max-width': 200}),
-                dbc.FormText("""A value denoting the maximum rotation angle, 
+                     dbc.Label('Max Angle (degrees)'),
+                     dbc.Input(id='max_angle', value='90', type='text',
+                               style={'max-width': 200}),
+                     dbc.FormText("""A value denoting the maximum rotation angle, 
                 in decimal degrees, of the one-axis tracker from its 
                 horizontal position (horizontal if axis_tilt = 0). A 
                 max_angle of 90 degrees allows the tracker to rotate to a 
                 vertical position to point the panel towards a horizon. 
                 max_angle of 180 degrees allows for full rotation."""),
-                dbc.Label('Backtrack'),
-                 dbc.FormText("""Controls whether the tracker has the 
+                     dbc.Label('Backtrack'),
+                     dbc.FormText("""Controls whether the tracker has the 
                  capability to ''backtrack'' to avoid row-to-row shading. False 
                  denotes no backtrack capability. True denotes backtrack 
                  capability."""),
-                dbc.RadioItems(
-                        options=[
-                            {"label": "True", "value": True},
-                            {"label": "False", "value": False},
-                        ],
-                        value=True,
-                        id="backtrack",
-                    ),
-                dbc.Label('Ground Coverage Ratio'),
-                dbc.Input(id='ground_coverage_ratio', value='0.286', type='text',
-                           style={'max-width': 200}),
-                dbc.FormText("""A value denoting the ground coverage ratio 
+                     dbc.RadioItems(
+                         options=[
+                             {"label": "True", "value": True},
+                             {"label": "False", "value": False},
+                         ],
+                         value=True,
+                         id="backtrack",
+                     ),
+                     dbc.Label('Ground Coverage Ratio'),
+                     dbc.Input(id='ground_coverage_ratio', value='0.286',
+                               type='text',
+                               style={'max-width': 200}),
+                     dbc.FormText("""A value denoting the ground coverage ratio 
                  of a tracker system which utilizes backtracking; i.e. the 
                  ratio between the PV array surface area to total ground 
                  area. A tracker system with modules 2 meters wide, centered 
                  on the tracking axis, with 6 meters between the tracking 
                  axes has a gcr of 2/6=0.333. If gcr is not provided, 
                  a gcr of 2/7 is default. gcr must be <=1"""),
-                 ]
+                     ]
                 )
             )
-            ],tab_id='single_axis_tracker',label='Single Axis Tracker')
-        ],id='mount_type',active_tab='fixed_tilt'),
-
+        ], tab_id='single_axis_tracker', label='Single Axis Tracker')
+    ], id='mount_type', active_tab='fixed_tilt'),
 
     dbc.Label('Max string voltage (V)'),
     dbc.Input(id='max_string_voltage',
@@ -279,43 +259,189 @@ layout = dbc.Container([
     html.Details([
         html.Summary('Modify/view model Parameters'),
         html.Div([
-            html.P('Module and racking model (above) are used to populate fields '
-                   'below. Changing the fields below will use these modified '
-                   'parameters in the model.'),
+            html.P(
+                'Module and racking model (above) are used to populate fields '
+                'below. Changing the fields below will use these modified '
+                'parameters in the model.'),
 
-            dbc.Label('Voco: Open circuit module voltage at standard test conditions (V)'),
-            dbc.Input(id='Voco', value=60, type='number',style={'max-width': 200}),
+            dbc.Label(
+                'Voco: Open circuit module voltage at standard test conditions (V)'),
+            dbc.Input(id='Voco', value='60', type='text',
+                      style={'max-width': 200}),
             dbc.Label('Num_cells: Cells in series.'),
-            dbc.Input(id='Cells_in_Series', value=96, type='number',style={'max-width': 200}),
-            dbc.Label('Bvoco: Temperature coefficient for module open-circuit-voltage (V/C)'),
-            dbc.Input(id='Bvoco', value=-0.21696, type='number',style={'max-width': 200}),
-            dbc.Label('Mbvoc: Coefficient providing the irradiance dependence for the Voc temperature coefficient, typically assumed to be zero (V/C)'),
-            dbc.Input(id='Mbvoc', value=0, type='number',style={'max-width': 200}),
+            dbc.Input(id='Cells_in_Series', value='96', type='text',
+                      style={'max-width': 200}),
+            dbc.Label(
+                'Bvoco: Temperature coefficient for module open-circuit-voltage (V/C)'),
+            dbc.Input(id='Bvoco', value='-0.21696', type='text',
+                      style={'max-width': 200}),
+            dbc.Label(
+                'Mbvoc: Coefficient providing the irradiance dependence for the Voc temperature coefficient, typically assumed to be zero (V/C)'),
+            dbc.Input(id='Mbvoc', value='0', type='text',
+                      style={'max-width': 200}),
             dbc.Label('n: Diode ideality factor'),
-            dbc.Input(id='diode_ideality_factor', value=1.4032, type='number',style={'max-width': 200}),
-            dbc.Label('a: Empirically-determined coefficient establishing the upper limit for module temperature at low wind speeds and high solar irradiance'),
-            dbc.Input(id='a', value=-3.47, type='number',style={'max-width': 200}),
-            dbc.Label('b: Empirically-determined coefficient establishing the rate at which module temperature drops as wind speed increases (s/m)'),
-            dbc.Input(id='b', value=-0.0594, type='number',style={'max-width': 200}),
-            dbc.Label('DT: temperature difference between cell and module at reference irradiance (C)'),
-            dbc.Input(id='DT', value=3, type='number',style={'max-width': 200})
-            ],style={'marginLeft':50})
-        ]),
+            dbc.Input(id='diode_ideality_factor', value='1.4032', type='text',
+                      style={'max-width': 200}),
+            dbc.Label('FD: Fraction of diffuse irradiance used'),
+            dbc.Input(id='FD', value='1', type='text',
+                      style={'max-width': 200}),
+            dbc.Label('Air mass coefficients'),
+            # dbc.Form([
+            #     dbc.FormGroup([
+            #         dbc.Label('A0'),
+            #         dbc.Input(id='A0',type='number')
+            #     ])
+            # ],inlne=True),
 
+
+            dbc.Row(
+                [
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("A0"),
+                                dbc.Input(id="A0",value='0.9281',type="text"),
+                            ]
+                        ),
+                        width=2,
+                    ),
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("A1"),
+                                dbc.Input(id="A1",value='0.06615',type="text"),
+                            ]
+                        ),
+                        width=2,
+                    ),
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("A2"),
+                                dbc.Input(id="A2",value='-0.01384',type="text"),
+                            ]
+                        ),
+                        width=2,
+                    ),
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("A3"),
+                                dbc.Input(id="A3",value='0.001298',type="text"),
+                            ]
+                        ),
+                        width=2,
+                    ),
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("A4"),
+                                dbc.Input(id="A4",value='-4.6e-05',type="text"),
+                            ]
+                        ),
+                        width=2,
+                    ),
+                ],
+                form=True,
+            ),
+            dbc.Label('AOI coefficients'),
+            dbc.Row(
+                [
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("B0"),
+                                dbc.Input(id="B0",value='1',type="text"),
+                            ]
+                        ),
+                        width=2,
+                    ),
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("B1"),
+                                dbc.Input(id="B1",value='-0.002438', type="text"),
+                            ]
+                        ),
+                        width=2,
+                    ),
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("B2"),
+                                dbc.Input(id="B2",value='0.0003103', type="text"),
+                            ]
+                        ),
+                        width=2,
+                    ),
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("B3"),
+                                dbc.Input(id="B3",value='-1.246e-05', type="text"),
+                            ]
+                        ),
+                        width=2,
+                    ),
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("B4"),
+                                dbc.Input(id="B4",value='2.11e-07',type="text"),
+                            ]
+                        ),
+                        width=2,
+                    ),
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("B5"),
+                                dbc.Input(id="B5",value='-1.36e-09',type="text"),
+                            ]
+                        ),
+                        width=2,
+                    ),
+                ],
+                form=True,
+            ),
+            dbc.Label(
+                'a: Empirically-determined coefficient establishing the upper limit for module temperature at low wind speeds and high solar irradiance'),
+            dbc.Input(id='a', value=-3.47, type='number',
+                      style={'max-width': 200}),
+            dbc.Label(
+                'b: Empirically-determined coefficient establishing the rate at which module temperature drops as wind speed increases (s/m)'),
+            dbc.Input(id='b', value=-0.0594, type='number',
+                      style={'max-width': 200}),
+            dbc.Label(
+                'DT: temperature difference between cell and module at reference irradiance (C)'),
+            dbc.Input(id='DT', value=3, type='number', style={'max-width': 200})
+        ], style={'marginLeft': 50})
+    ]),
 
     html.H3('Calculate Voc'),
     html.P('Press "Calculate" to run Voc calculation (~5 seconds)'),
-    dbc.Button(id='submit-button', n_clicks=0, children='Calculate',color="secondary"),
-    html.P('Select whether to generate csv for downloading data (summary csv is always generated):'),
-    dbc.Checklist(id='generate-datafile',
-        options=[
-            {'label': 'Generate Download Datafile', 'value': 'generate-datafile'},
-        ],
-        values=[]
-    ),
+    dbc.Button(id='submit-button', n_clicks=0, children='Calculate',
+               color="secondary"),
+    # html.P(' '),
+    # html.A(dbc.Button(id='submit-button-with-download',
+    #                   n_clicks=0,
+    #                   children='Calculate and download data as csv'),
+    #        href="/download_simulation_data/"),
+    # html.P(
+    #     'Select whether to generate csv for downloading data (summary csv is always generated):'),
+    # dbc.Checklist(id='generate-datafile',
+    #               options=[
+    #                   {'label': 'Generate Download Datafile',
+    #                    'value': 'generate-datafile'},
+    #               ],
+    #               values=[]
+    #               ),
     html.H2('Results'),
     html.Div(id='load'),
-    html.Div(id='graphs',style={'display': 'none'}),
+    html.Div(id='graphs', style={'display': 'none'}),
+    dcc.Store(id='results-store',storage_type='memory'),
+    # dbc.Button('Download results as csv',id='download_csv',n_clicks=0),
+    # html.Div(id='graphs'),
 
     # html.Div([html.Div('Calculating...')], id='graphs'),
     # html.A('Download data as csv file', id='download-data',style={'display':None}),
@@ -328,7 +454,8 @@ layout = dbc.Container([
     html.Div(id='voc_list'),
     html.H2('Frequently Asked Questions'),
     html.Details([
-        html.Summary('Why is there a spike in the temperature histogram at 0 C?'),
+        html.Summary(
+            'Why is there a spike in the temperature histogram at 0 C?'),
         html.Div("""In the NSRDB database, the temperature values are 
         interpolated from the NASA MERRA-2 dataset using a standard 
         temperature lapse rate [1]. The temperature data are then truncated 
@@ -338,10 +465,19 @@ layout = dbc.Container([
         for most locations, this rounding error has no effect on max Voc, 
         but in the worst case the rounding error results in a fractional 
         error in Voc of Bvoco*(1 C)/Voco, on the order of 0.3%. 
-        
-        """,style={'marginLeft':50}),
-    ]),
 
+        """, style={'marginLeft': 50}),
+    ]),
+    html.Details([
+        html.Summary(
+            'Can I get the source code for this website?'),
+        html.Div([
+            html.Label(["Of Course! Please visit us on github: ",
+                        html.A("https://github.com/toddkarin/pvtools",
+                               href="https://github.com/toddkarin/pvtools")])
+        ],
+            style={'marginLeft': 50})
+    ]),
     html.H2('References'),
     html.P("""
         [1]  M. Sengupta, Y. Xie, A. Lopez, A. Habte, G. Maclaurin, and J. 
@@ -366,20 +502,19 @@ layout = dbc.Container([
 ],
     style={'columnCount': 1,
            'maxWidth': 1000,
-           'align':'center'})
+           'align': 'center'})
+
 
 # app.layout = layout
 
 
-
-
+# Callback for finding closest lat/lon in database.
 @app.callback(
     Output('closest-message', 'children'),
-    [Input('session-id', 'children'),
-     Input('lat', 'value'),
+    [Input('lat', 'value'),
      Input('lon', 'value')]
 )
-def update_output_div(session_id, lat, lon):
+def update_output_div(lat, lon):
     filedata = vocmaxlib.filedata
     filedata_closest = nsrdbtools.find_closest_datafiles(float(lat), float(lon),
                                                          filedata)
@@ -398,12 +533,13 @@ def update_output_div(session_id, lat, lon):
 #      Input('lon', 'value')])
 @app.callback(
     Output('map', 'figure'),
-    [Input('session-id', 'children'),
-     Input('get-weather','n_clicks')],
-     [State('lat', 'value'),
+    [Input('get-weather', 'n_clicks')],
+    [State('lat', 'value'),
      State('lon', 'value')])
-def update_map_callback(session_id, n_clicks, lat, lon):
-    filedata = vocmaxlib.filedata
+def update_map_callback(n_clicks, lat, lon):
+    filedata = pvtoolslib.get_s3_filename_df()
+
+    print(filedata)
     filedata_closest = nsrdbtools.find_closest_datafiles(float(lat), float(lon),
                                                          filedata)
 
@@ -494,7 +630,6 @@ def update_map_callback(session_id, n_clicks, lat, lon):
 #     return str(d)
 
 
-
 # @app.callback(
 #     Output('lon', 'value'),
 #     [Input('click-data', 'children')])
@@ -536,37 +671,96 @@ def update_map_callback(session_id, n_clicks, lat, lon):
 #
 
 
-@app.callback(Output('Voco', 'value'),[Input('module_name', 'value')])
+# Update values when changing the module name.
+@app.callback(Output('Voco', 'value'), [Input('module_name', 'value')])
 def update_Voco(module_name):
-    return vocmaxlib.sandia_modules[module_name]['Voco']
+    return str(pvtoolslib.sandia_modules[module_name]['Voco'])
 
-@app.callback(Output('Bvoco', 'value'),[Input('module_name', 'value')])
+
+@app.callback(Output('Bvoco', 'value'), [Input('module_name', 'value')])
 def update_Voco(module_name):
-    return vocmaxlib.sandia_modules[module_name]['Bvoco']
+    return str(pvtoolslib.sandia_modules[module_name]['Bvoco'])
 
-@app.callback(Output('Mbvoc', 'value'),[Input('module_name', 'value')])
+
+@app.callback(Output('Mbvoc', 'value'), [Input('module_name', 'value')])
 def update_Voco(module_name):
-    return vocmaxlib.sandia_modules[module_name]['Mbvoc']
+    return str(pvtoolslib.sandia_modules[module_name]['Mbvoc'])
 
-@app.callback(Output('Cells_in_Series', 'value'),[Input('module_name', 'value')])
+
+@app.callback(Output('Cells_in_Series', 'value'),
+              [Input('module_name', 'value')])
 def update_Voco(module_name):
-    return vocmaxlib.sandia_modules[module_name]['Cells_in_Series']
+    return str(pvtoolslib.sandia_modules[module_name]['Cells_in_Series'])
 
-@app.callback(Output('diode_ideality_factor', 'value'),[Input('module_name', 'value')])
+
+@app.callback(Output('diode_ideality_factor', 'value'),
+              [Input('module_name', 'value')])
 def update_Voco(module_name):
-    return vocmaxlib.sandia_modules[module_name]['N']
+    return str(pvtoolslib.sandia_modules[module_name]['N'])
 
-@app.callback(Output('a', 'value'),[Input('racking_model', 'value')])
+
+@app.callback(Output('FD', 'value'), [Input('module_name', 'value')])
+def update_Voco(module_name):
+    return str(pvtoolslib.sandia_modules[module_name]['FD'])
+
+@app.callback(Output('A0', 'value'), [Input('module_name', 'value')])
+def update(module_name):
+    return str(pvtoolslib.sandia_modules[module_name]['A0'])
+
+@app.callback(Output('A1', 'value'), [Input('module_name', 'value')])
+def update(module_name):
+    return str(pvtoolslib.sandia_modules[module_name]['A1'])
+
+@app.callback(Output('A2', 'value'), [Input('module_name', 'value')])
+def update(module_name):
+    return str(pvtoolslib.sandia_modules[module_name]['A2'])
+
+@app.callback(Output('A3', 'value'), [Input('module_name', 'value')])
+def update(module_name):
+    return str(pvtoolslib.sandia_modules[module_name]['A3'])
+
+@app.callback(Output('A4', 'value'), [Input('module_name', 'value')])
+def update(module_name):
+    return str(pvtoolslib.sandia_modules[module_name]['A4'])
+
+@app.callback(Output('B0', 'value'), [Input('module_name', 'value')])
+def update(module_name):
+    return str(pvtoolslib.sandia_modules[module_name]['B0'])
+
+@app.callback(Output('B1', 'value'), [Input('module_name', 'value')])
+def update(module_name):
+    return str(pvtoolslib.sandia_modules[module_name]['B1'])
+
+@app.callback(Output('B2', 'value'), [Input('module_name', 'value')])
+def update(module_name):
+    return str(pvtoolslib.sandia_modules[module_name]['B2'])
+
+@app.callback(Output('B3', 'value'), [Input('module_name', 'value')])
+def update(module_name):
+    return str(pvtoolslib.sandia_modules[module_name]['B3'])
+
+@app.callback(Output('B4', 'value'), [Input('module_name', 'value')])
+def update(module_name):
+    return str(pvtoolslib.sandia_modules[module_name]['B4'])
+
+@app.callback(Output('B5', 'value'), [Input('module_name', 'value')])
+def update(module_name):
+    return str(pvtoolslib.sandia_modules[module_name]['B5'])
+
+@app.callback(Output('a', 'value'), [Input('racking_model', 'value')])
 def update_Voco(racking_model):
     return pvlib.pvsystem.TEMP_MODEL_PARAMS['sapm'][racking_model][0]
 
-@app.callback(Output('b', 'value'),[Input('racking_model', 'value')])
+
+@app.callback(Output('b', 'value'), [Input('racking_model', 'value')])
 def update_Voco(racking_model):
     return pvlib.pvsystem.TEMP_MODEL_PARAMS['sapm'][racking_model][1]
 
-@app.callback(Output('DT', 'value'),[Input('racking_model', 'value')])
-def update_Voco(racking_model):
+
+@app.callback(Output('DT', 'value'), [Input('racking_model', 'value')])
+def update(racking_model):
     return pvlib.pvsystem.TEMP_MODEL_PARAMS['sapm'][racking_model][2]
+
 
 #
 # @app.callback(Output('download-data', 'href'),
@@ -583,80 +777,133 @@ def update_Voco(racking_model):
 
 
 @app.callback(Output('load', 'children'),
-              [Input('submit-button', 'n_clicks')])
+              [Input('submit-button', 'n_clicks')
+               ])
 def prepare_data(categ):
     if categ:
-        return html.Div([ dbc.Alert("Calculating...", color="primary")], id='graphs')
+        return html.Div([
+            dbc.Alert("Calculating...",
+                                   color="primary")
+                ],
+            id='graphs')
 
 
 #
-@app.callback(Output('graphs', 'children'),
-              [Input('session-id', 'children'),
-               Input('submit-button', 'n_clicks')],
+@app.callback([Output('graphs', 'children'),
+               Output('results-store','children')
+               ],
+              [Input('submit-button', 'n_clicks')
+               ],
               [State('module_name', 'value'),
                State('racking_model', 'value'),
                State('surface_tilt', 'value'),
                State('surface_azimuth', 'value'),
                State('lat', 'value'),
                State('lon', 'value'),
-               State('Voco','value'),
-               State('Bvoco','value'),
-               State('Mbvoc','value'),
-               State('Cells_in_Series','value'),
-               State('diode_ideality_factor','value'),
-               State('a','value'),
-               State('b','value'),
-               State('DT','value'),
-               State('generate-datafile','values'),
-               State('max_string_voltage','value'),
-               State('mount_type','active_tab'),
-                State('axis_tilt','value'),
-                State('axis_azimuth','value'),
-                State('max_angle','value'),
-                State('backtrack','value'),
-                State('ground_coverage_ratio','value'),
-
+               State('Voco', 'value'),
+               State('Bvoco', 'value'),
+               State('Mbvoc', 'value'),
+               State('Cells_in_Series', 'value'),
+               State('diode_ideality_factor', 'value'),
+               State('FD', 'value'),
+               State('A0', 'value'),
+               State('A1', 'value'),
+               State('A2', 'value'),
+               State('A3', 'value'),
+               State('A4', 'value'),
+               State('B0', 'value'),
+               State('B1', 'value'),
+               State('B2', 'value'),
+               State('B3', 'value'),
+               State('B4', 'value'),
+               State('B5', 'value'),
+               State('a', 'value'),
+               State('b', 'value'),
+               State('DT', 'value'),
+               State('max_string_voltage', 'value'),
+               State('mount_type', 'active_tab'),
+               State('axis_tilt', 'value'),
+               State('axis_azimuth', 'value'),
+               State('max_angle', 'value'),
+               State('backtrack', 'value'),
+               State('ground_coverage_ratio', 'value'),
                ]
               )
-def update_graph(session_id, n_clicks, module_name, racking_model,
+def update_graph(n_clicks, module_name, racking_model,
                  surface_tilt, surface_azimuth, lat, lon, Voco, Bvoco, Mbvoc,
                  Cells_in_Series,
-                 diode_ideality_factor, a, b, DT, generate_datafile,
+                 diode_ideality_factor, FD,
+                 A0,A1,A2,A3,A4,B0,B1,B2,B3,B4,B5,
+                 a, b, DT,
                  max_string_voltage,
-                 mount_type,axis_tilt,axis_azimuth,max_angle,backtrack,ground_coverage_ratio):
+                 mount_type, axis_tilt, axis_azimuth, max_angle, backtrack,
+                 ground_coverage_ratio):
     system_parameters = {
-        'racking_model': {'a':a, 'b':b, 'deltaT': DT},
+        'racking_model': {'a': a, 'b': b, 'deltaT': DT},
         # 'racking_model': racking_model,
         'surface_tilt': float(surface_tilt),
         'surface_azimuth': float(surface_azimuth),
         'mount_type': mount_type,
-        'axis_tilt':float(axis_tilt),
-        'axis_azimuth':float(axis_azimuth),
-        'max_angle':float(max_angle),
-        'backtrack':float(backtrack),
-        'ground_coverage_ratio':float(ground_coverage_ratio)}
+        'axis_tilt': float(axis_tilt),
+        'axis_azimuth': float(axis_azimuth),
+        'max_angle': float(max_angle),
+        'backtrack': float(backtrack),
+        'ground_coverage_ratio': float(ground_coverage_ratio)}
+
+
+    print('Number clicks: ' + str(n_clicks))
+    if n_clicks<1:
+        print('Not running simulation.')
+        return [], ''
 
     print(system_parameters)
-    module_parameters = vocmaxlib.sandia_modules[module_name]
+    module_parameters = pvtoolslib.sandia_modules[module_name]
 
     # Overwrite provided module parameters.
-    module_parameters['Voco'] = Voco
-    module_parameters['Bvoco'] = Bvoco
-    module_parameters['Mbvoc'] = Mbvoc
-    module_parameters['Cells_in_Series'] = Cells_in_Series
-    module_parameters['diode_ideality_factor'] = diode_ideality_factor
+    module_parameters['Voco'] = float(Voco)
+    module_parameters['Bvoco'] = float(Bvoco)
+    module_parameters['Mbvoc'] = float(Mbvoc)
+    module_parameters['Cells_in_Series'] = float(Cells_in_Series)
+    module_parameters['diode_ideality_factor'] = float(diode_ideality_factor)
+    module_parameters['FD'] = float(FD)
 
-    print('Getting weather data...')
-    filedata = vocmaxlib.filedata
+    module_parameters['A0'] = float(A0)
+    module_parameters['A1'] = float(A1)
+    module_parameters['A2'] = float(A2)
+    module_parameters['A3'] = float(A3)
+    module_parameters['A4'] = float(A4)
+    module_parameters['B0'] = float(B0)
+    module_parameters['B1'] = float(B1)
+    module_parameters['B2'] = float(B2)
+    module_parameters['B3'] = float(B3)
+    module_parameters['B4'] = float(B4)
+    module_parameters['B5'] = float(B5)
+
+
+    filedata = pvtoolslib.get_s3_filename_df()
     filedata_closest = nsrdbtools.find_closest_datafiles(float(lat), float(lon),
                                                          filedata)
 
-    # Get weather data
-    weather_fullpath = filedata_closest['weather_fullpath'].to_list()[0]
-    info_fullpath = filedata_closest['info_fullpath'].to_list()[0]
 
-    weather = nsrdbtools.import_weather_pickle(weather_fullpath)
-    info = pd.read_pickle(info_fullpath)
+    # filedata = vocmaxlib.filedata
+    # filedata_closest = nsrdbtools.find_closest_datafiles(float(lat), float(lon),
+    #                                                      filedata)
+
+
+
+
+
+    print('Getting weather data...')
+    weather, info = pvtoolslib.get_s3_weather_data(filedata_closest['filename'].iloc[0])
+    print('done.')
+    # print(info.keys())
+
+    # Get weather data
+    # weather_fullpath = filedata_closest['weather_fullpath'].to_list()[0]
+    # info_fullpath = filedata_closest['info_fullpath'].to_list()[0]
+
+    # weather = nsrdbtools.import_weather_pickle(weather_fullpath)
+    # info = pd.read_pickle(info_fullpath)
 
     print('done')
 
@@ -664,11 +911,10 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
 
     print('Simulating system...')
     (df, mc) = vocmaxlib.calculate_max_voc(weather, info,
-                                   module_parameters=module_parameters,
-                                   system_parameters=system_parameters)
+                                           module_parameters=module_parameters,
+                                           system_parameters=system_parameters)
 
-
-
+    # print(weather['temp_cell'])
 
     print('done')
     y, c = np.histogram(df.v_oc,
@@ -682,7 +928,8 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
         yearly_min_temp.append(
             weather[weather.index.year == j]['temp_air'].min())
         yearly_min_daytime_temp.append(
-            weather[weather.index.year == j]['temp_air'][weather[weather.index.year == j]['ghi']>150].min()
+            weather[weather.index.year == j]['temp_air'][
+                weather[weather.index.year == j]['ghi'] > 150].min()
         )
     mean_yearly_min_ambient_temp = np.mean(yearly_min_temp)
     mean_yearly_min_daytime_ambient_temp = np.mean(yearly_min_daytime_temp)
@@ -690,60 +937,91 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
     # min_daytime_temp = df['temp_air'][df['ghi']>150].min()
 
     voc_1sun_min_temp = mc.system.sapm(1, mean_yearly_min_ambient_temp)['v_oc']
-    voc_1sun_min_daytime_temp = mc.system.sapm(1, mean_yearly_min_daytime_ambient_temp)['v_oc']
+    voc_1sun_min_daytime_temp = \
+    mc.system.sapm(1, mean_yearly_min_daytime_ambient_temp)['v_oc']
 
-    voc_dni_cell_temp = mc.system.sapm( (df['dni']+df['dhi'])/1000, df['temp_cell'])['v_oc'].max()
-    voc_P99p9 = np.percentile(
-        df['v_oc'][ np.logical_not(np.isnan( df['v_oc'] ))],
-        99.9)
+    voc_dni_cell_temp = \
+    mc.system.sapm((df['dni'] + df['dhi']) / 1000, df['temp_cell'])[
+        'v_oc'].max()
+    voc_P99p5 = np.percentile(
+        df['v_oc'][np.logical_not(np.isnan(df['v_oc']))],
+        99.5)
     voc_P99 = np.percentile(df['v_oc'][np.logical_not(np.isnan(df['v_oc']))],
-                              99)
+                            99)
 
     results_dict = {
-        'Source':info['Source'][0],
-        'Location ID': info['Location ID'][0],
-        'Elevation':info['Elevation'][0],
-        'Latitude':info['Latitude'][0],
-        'Longitude':info['Longitude'][0],
-        'DHI Units':info['DHI Units'][0],
-        'DNI Units':info['DNI Units'][0],
-        'GHI Units':info['GHI Units'][0],
-        'V_oc Units': 'V',
-        'Wind Speed Units':info['Wind Speed'][0],
-        'interval_in_hours': info['interval_in_hours'][0],
-        'timedelta_in_years': info['timedelta_in_years'][0],
-        'NSRDB Version': info['Version'][0],
+        'Source': info['source'],
+        'Location ID': info['location_id'],
+        'Elevation': info['elevation'],
+        'Latitude': info['lat'],
+        'Longitude': info['lon'],
+        # 'DHI Units': info['DHI Units'][0],
+        # 'DNI Units': info['DNI Units'][0],
+        # 'GHI Units': info['GHI Units'][0],
+        # 'V_oc Units': 'V',
+        # 'Wind Speed Units': info['Wind Speed'][0],
+        'interval_in_hours': info['interval_in_hours'],
+        'timedelta_in_years': info['timedelta_in_years'],
+        'NSRDB Version': info['version'],
         'PVLIB Version': pvlib._version.get_versions()['version'],
         'PVTools Version': '0.0.1',
         'Date Created': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }
-    info_df = pd.DataFrame(results_dict,index = [0])
+    }
+    info_df = pd.DataFrame(results_dict, index=[0])
 
-    summary = 'Weather data source, {}\n'.format(info['Source'][0]) + \
-        'Location ID, {}\n'.format(info['Location ID'][0]) + \
-        'Weather data start date, {}\n'.format(df.index[0].strftime("%Y-%m-%d %H:%M:%S")) + \
-        'Weather data end date, {}\n'.format(df.index[-1].strftime("%Y-%m-%d %H:%M:%S")) + \
-        'Latitude, {:0.4f}\n'.format(info.Latitude[0]) + \
-        'Longitude, {:0.4f}\n'.format(info.Longitude[0]) + \
-        'P99 Voc (V), {:0.3f}\n'.format(np.percentile(df.v_oc, 99)) + \
-        'Max Historical Voc (V), {:0.3f}\n'.format(df.v_oc.max()) + \
-        'P01 Air Temp (C), {:0.2f}\n'.format(np.percentile(df['temp_air'], 1)) + \
-        'Min Historical Air Temp (C), {:0.3f}\n'.format(df['temp_air'].min()) + \
-        'P01 Cell Temp (C), {:0.2f}\n'.format(np.percentile(df['temp_cell'], 1)) + \
-        'Min Historical Cell Temp (C), {:0.2f}\n'.format(df['temp_cell'].min())
+    summary = [
+        'Latitude: {:0.4f}'.format(info['lat']),
+        'Longitude: {:0.4f}'.format(info['lon']),
+        'Maximum Design String Voltage: {:0.2f} V'.format(max_string_voltage),
+        'Historical Max Voc: {:0.3f} V'.format(df.v_oc.max()),
+        'P99.5 Voc: {:0.3f} V'.format(voc_P99p5),
+        'P99.5 Max String length: {:0.0f} modules'.format(
+            np.floor(max_string_voltage / voc_P99p5)),
+        'Traditional max Voc: {:0.3f} V'.format(voc_1sun_min_temp),
+        'Traditional Max String length: {:0.0f} modules'.format(
+            np.floor(max_string_voltage / voc_1sun_min_temp)),
+        'Yearly mean minimum ambient temperature: {:0.3f} C'.format(mean_yearly_min_ambient_temp),
+        'Weather data source: {}'.format(info['source']),
+        'Location ID: {}'.format(info['location_id']),
+        'Weather data start date: {}'.format(
+            df.index[0].strftime("%Y-%m-%d %H:%M:%S")),
+        'Weather data end date: {}'.format(
+            df.index[-1].strftime("%Y-%m-%d %H:%M:%S")),
 
+    ]
+
+    # summary.append('Sandia Module parameters')
+    # for p in list(module_parameters.keys()):
+    #     summary.append( p + ': {:0.3f}'.format(module_parameters[p]))
+
+
+              # + \
+              # 'Location ID, {}\n'.format(info['location_id']) + \
+              # 'Weather data start date, {}\n'.format(
+              #     df.index[0].strftime("%Y-%m-%d %H:%M:%S")) + \
+              # 'Weather data end date, {}\n'.format(
+              #     df.index[-1].strftime("%Y-%m-%d %H:%M:%S")) + \
+              # 'Latitude, {:0.4f}\n'.format(info.Latitude[0]) + \
+              # 'Longitude, {:0.4f}\n'.format(info.Longitude[0]) + \
+              # 'P99 Voc (V), {:0.3f}\n'.format(np.percentile(df.v_oc, 99)) + \
+              # 'Max Historical Voc (V), {:0.3f}\n'.format(df.v_oc.max()) + \
+              # 'P01 Air Temp (C), {:0.2f}\n'.format(
+              #     np.percentile(df['temp_air'], 1)) + \
+              # 'Min Historical Air Temp (C), {:0.3f}\n'.format(
+              #     df['temp_air'].min()) + \
+              # 'P01 Cell Temp (C), {:0.2f}\n'.format(
+              #     np.percentile(df['temp_cell'], 1)) + \
+              # 'Min Historical Cell Temp (C), {:0.2f}\n'.format(
+              #     df['temp_cell'].min())
 
     # print(info_df)
 
-
     # # Make a directory for saving session files.
-    # # if not os.path.isdir(os.path.join('downloads',session_id)):
-    # #     os.mkdir(os.path.join('downloads',session_id))
-    # save_filename = os.path.join('downloads','maxvoc_data.csv')
-    # info_filename = os.path.join('downloads','maxvoc_info.csv')
-    # # save_filename = 'maxvoc_data.csv'
-    # # info_filename = 'maxvoc_info.csv'
-    # # temp_filename = os.path.join('downloads', session_id, 'maxvoc_temp.pkl')
+    # if not os.path.isdir(os.path.join('downloads',session_id)):
+    #     os.mkdir(os.path.join('downloads',session_id))
+    # save_filename = os.path.join('downloads',session_id,'maxvoc_data.csv')
+    # info_filename = os.path.join('downloads',session_id,'maxvoc_info.csv')
+    # temp_filename = os.path.join('downloads', session_id, 'maxvoc_temp.pkl')
     # print('Saving data as ' + str(save_filename) + '...')
     # with open(save_filename,'w') as f:
     #     f.write(info_df.to_csv(index=False))
@@ -756,29 +1034,22 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
     #     f.write(summary)
     # print('done')
 
-
     # Make histograms
     def scale_to_hours_per_year(y):
-        return y / info.timedelta_in_years[0] * info.interval_in_hours[0]
+        return y / info['timedelta_in_years'] * info['interval_in_hours']
 
     y_scale = scale_to_hours_per_year(y)
     voc_hist_y = y_scale[1:]
     voc_hist_x = c[1:-1]
 
-
-    p_values = np.array([99])
-    v_oc_percentile = np.percentile(df.v_oc, p_values)
-
-
     temp_bins = np.arange(
-                 -4+np.floor(np.min([df['temp_cell'].min(), df['temp_air'].min()])),
-                 1+np.floor(np.max([df['temp_cell'].max(), df['temp_air'].max()]))
-                            )
+        -4 + np.floor(np.min([df['temp_cell'].min(), df['temp_air'].min()])),
+        1 + np.floor(np.max([df['temp_cell'].max(), df['temp_air'].max()]))
+    )
 
     temp_cell_hist, temp_cell_hist_bin = np.histogram(df['temp_cell'],
-             bins=temp_bins)
+                                                      bins=temp_bins)
     temp_cell_hist = scale_to_hours_per_year(temp_cell_hist)
-
 
     temp_air_hist, temp_air_hist_bin = np.histogram(df['temp_air'],
                                                     bins=temp_bins)
@@ -789,35 +1060,33 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
     temp_cell_hist_y = temp_cell_hist[1:]
     temp_air_hist_y = temp_air_hist[1:]
 
-
-    max_pos = np.argmax(np.array( df.v_oc))
-    plot_min_index =  np.max([0,max_pos-1500])
+    max_pos = np.argmax(np.array(df.v_oc))
+    plot_min_index = np.max([0, max_pos - 1500])
     plot_max_index = np.min([len(df.v_oc), max_pos + 1500])
 
     colors = plotly.colors.DEFAULT_PLOTLY_COLORS
 
-
     voc_poi = pd.DataFrame.from_dict(
         {
-            'P99':
-             ['P99',
-              'P99 Voc: {:.3f} V<br>'
-              'Maximum String length: {:.0f}<br>'.format(
-                  voc_P99,
-                  np.floor(max_string_voltage/voc_P99)
-              ),
-              voc_P99,
-              'rgb(0, 0, 0)'
-              ],
-            'P99.9':
-                ['P99.9',
-                 'P99.9 Voc: {:.3f} V<br>'
+            # 'P99':
+            #     ['P99',
+            #      'P99 Voc: {:.3f} V<br>'
+            #      'Maximum String length: {:.0f}<br>'.format(
+            #          voc_P99,
+            #          np.floor(max_string_voltage / voc_P99)
+            #      ),
+            #      voc_P99,
+            #      'rgb(0, 0, 0)'
+            #      ],
+            'P99.5':
+                ['P99.5',
+                 'P99.5 Voc: {:.3f} V<br>'
                  'Maximum String length: {:.0f}<br>'
                  'Recommended 690.7(A)(3) value'.format(
-                     voc_P99p9,
-                     np.floor(max_string_voltage / voc_P99p9)
+                     voc_P99p5,
+                     np.floor(max_string_voltage / voc_P99p5)
                  ),
-                 voc_P99p9,
+                 voc_P99p5,
                  colors[2]
                  ],
             'Max':
@@ -837,7 +1106,7 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
                  'Maximum String length: {:.0f}<br>'
                  'Calculated using 1 sun and mean yearly min ambient temp of {:.1f} C<br>Conservative 690.7(A)(1) value'.format(
                      voc_1sun_min_temp,
-                     np.floor(max_string_voltage /voc_1sun_min_temp),
+                     np.floor(max_string_voltage / voc_1sun_min_temp),
                      mean_yearly_min_ambient_temp,
                  ),
                  voc_1sun_min_temp,
@@ -855,7 +1124,7 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
                  voc_1sun_min_daytime_temp,
                  colors[5]
                  ],
-             'dni':
+            'dni':
                 ['Normal',
                  'Max Voc using DNI+DHI (simple calculation): {:.3f} V<br>'
                  'Maximum String length: {:.0f}<br>'.format(
@@ -865,22 +1134,20 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
                  colors[6]
                  ],
 
-         },
+        },
         orient='index',
-        columns = ['short_label','hover_label','value','color']
+        columns=['short_label', 'hover_label', 'value', 'color']
     ).transpose()
-
-
-
 
     temperature_poi = pd.DataFrame.from_dict(
         {
             'P1 Air':
-             ['P1',
-              '1 Percentile Air Temperature: {:.1f} C'.format(np.percentile(df['temp_air'], 1)),
-              np.percentile(df['temp_air'], 1),
-              'rgb(0, 0, 0)'
-              ],
+                ['P1',
+                 '1 Percentile Air Temperature: {:.1f} C'.format(
+                     np.percentile(df['temp_air'], 1)),
+                 np.percentile(df['temp_air'], 1),
+                 'rgb(0, 0, 0)'
+                 ],
             # 'P4 Air':
             #  ['P4',
             #   'P4 Air Temperature: {:.1f} C'.format(np.percentile(df['temp_air'], 4)),
@@ -899,7 +1166,7 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
                 ['Day',
                  'Historical Minimum Daytime Ambient Temperature: {:.1f} C'
                  '<br>Recommended 690.7(A)(1) value'.format(
-                     df['temp_air'][df['ghi']>150].min()),
+                     df['temp_air'][df['ghi'] > 150].min()),
                  df['temp_air'][df['ghi'] > 150].min(),
                  'rgb(0, 0, 0)'
                  ],
@@ -917,9 +1184,9 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
                  df['temp_cell'][max_pos],
                  'rgb(0, 0, 0)'
                  ],
-         },
+        },
         orient='index',
-        columns = ['short_label','hover_label','value','color']
+        columns=['short_label', 'hover_label', 'value', 'color']
     ).transpose()
 
     #
@@ -936,8 +1203,6 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
     #     columns = ['short_label','hover_label','value']
     # ).transpose()
 
-
-
     #
     # voc_poi = {'P99 Voc': np.percentile(df.v_oc, 99),
     #            'P99.9 Voc (Recommended)': np.percentile(df.v_oc, 99.9),
@@ -946,9 +1211,8 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
     #            }
 
     print('making output graphs...')
-    print('Remember to add in fraction of diffuse irradiance used and AM coefficents, AOI coefficients. ')
 
-    return_value = [
+    return_layout = [
         html.P('Simulation results for maximum Voc.'),
         dcc.Graph(
             id='Voc-histogram',
@@ -966,7 +1230,8 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
                         dict(
                             dict(
                                 x=voc_poi[s]['value'],
-                                y=voc_hist_y[ np.argmin( np.abs(voc_poi[s]['value']-voc_hist_x ))],
+                                y=voc_hist_y[np.argmin(
+                                    np.abs(voc_poi[s]['value'] - voc_hist_x))],
                                 xref='x',
                                 yref='y',
                                 xanchor='center',
@@ -986,7 +1251,7 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
                             ),
                             align='left'
                         )
-                    for s in voc_poi]
+                        for s in voc_poi]
                 )
             }
         ),
@@ -1009,7 +1274,8 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
                             dict(
                                 x=temperature_poi[s]['value'],
                                 y=temp_cell_hist_y[np.argmin(
-                                    np.abs(temperature_poi[s]['value'] - temp_cell_hist_x))],
+                                    np.abs(temperature_poi[s][
+                                               'value'] - temp_cell_hist_x))],
                                 xref='x',
                                 yref='y',
                                 xanchor='center',
@@ -1033,14 +1299,18 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
                 )
             }
         ),
-        html.Div('Calculation performed for {:.1f} years, showing position of maximum Voc'.format(info['timedelta_in_years'][0])),
+        html.Div(
+            'Calculation performed for {:.1f} years, showing position of maximum Voc'.format(
+                info['timedelta_in_years'])),
         dcc.Graph(
             id='temperature-PLOT',
             figure={
                 'data': [
-                    {'x': weather.index[plot_min_index:plot_max_index], 'y': df['temp_cell'][plot_min_index:plot_max_index],
+                    {'x': weather.index[plot_min_index:plot_max_index],
+                     'y': df['temp_cell'][plot_min_index:plot_max_index],
                      'type': 'line', 'name': 'Cell Temperature'},
-                    {'x': weather.index[plot_min_index:plot_max_index], 'y': df['temp_air'][plot_min_index:plot_max_index],
+                    {'x': weather.index[plot_min_index:plot_max_index],
+                     'y': df['temp_air'][plot_min_index:plot_max_index],
                      'type': 'line', 'name': 'Air Temperature'}
                 ],
                 'layout': go.Layout(
@@ -1052,7 +1322,7 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
                         dict(
                             dict(
                                 x=weather.index[max_pos],
-                                y= df['temp_cell'][max_pos],
+                                y=df['temp_cell'][max_pos],
                                 xref='x',
                                 yref='y',
                                 xanchor='center',
@@ -1081,27 +1351,79 @@ def update_graph(session_id, n_clicks, module_name, racking_model,
                 )
             }
         ),
+        # html.A(html.Button('Download results as csv'),href='download_simulation_data'),
+        # dbc.Button('Download results as csv',id='download_csv',n_clicks=0),
         html.H4('Results summary'),
-        html.Details([
-            html.Summary('View text summary'),
-            html.Div([html.P(s) for s in summary.split('\n')],style={'marginLeft':50})]),
+        # html.Details([
+            # html.Summary('View text summary'),
+        html.Div([html.P(s) for s in summary],
+                 style={'marginLeft': 10})
+        # ]),
         # html.P(
         #     html.A('Download data as csv file', id='download-data',href=save_filename)
         # ),
         # html.A('Download summary as csv file', id='download-summary',
         #        href=info_filename),
+        # html.Button(id='download-summary', children='Download Summary'),
+        # html.Button(id='download-data', children='Download Data as CSV')
     ]
+
+
+
+    print('converting to json...')
+    weather_json = weather.to_json()
     print('done')
 
-    return return_value
+    print('** Calculation done.')
+    return return_layout, weather_json
+#
+#
+# @app.callback([],
+#               [Input('download_csv','n_clicks')]
+#               [State('results-store', 'children')])
+# def update_Voco(n_clicks,results):
+#     print(results)
 
 
-@app.server.route('/downloads/<path:path>')
-def serve_static(path):
-    root_dir = os.getcwd()
-    return flask.send_from_directory(
-        os.path.join(root_dir, 'downloads'), path
-    )
+#
+#
+#
+# @app.server.route('/download_simulation_data/',
+#                   [State('results-store','children')
+#                    ])
+# def download_simulation_data(x):
+#     #Create DF
+#     d = {'col1': [1, 2], 'col2': [3, 4]}
+#     df = pd.DataFrame(data=d)
+#
+#     #Convert DF
+#     str_io = io.StringIO()
+#     df.to_csv(str_io, sep=",")
+#
+#     mem = io.BytesIO()
+#     mem.write(str_io.getvalue().encode('utf-8'))
+#     mem.seek(0)
+#     str_io.close()
+#
+#
+#
+#     # excel_writer = pd.ExcelWriter(strIO, engine="xlsxwriter")
+#     # df.to_excel(excel_writer, sheet_name="sheet1")
+#     # excel_writer.save()
+#     # excel_data = strIO.getvalue()
+#     # stream.seek(0)
+#
+#     return flask.send_file(mem,
+# 					   mimetype='text/csv',
+# 					   attachment_filename='downloadFile.csv',
+# 					   as_attachment=True)
+# @app.server.route('/downloads/<path:path>')
+# def serve_static(path):
+#     root_dir = os.getcwd()
+#     return flask.send_from_directory(
+#         os.path.join(root_dir, 'downloads'), path
+#     )
+
 
 #
 # if __name__ == '__main__':

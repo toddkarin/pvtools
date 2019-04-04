@@ -3,7 +3,10 @@ This is the directory storing Heroku files.
 --
 
 Started with Heroku install instructions.
- 
+https://dash.plot.ly/deployment
+
+Delete functools32==3.2.3.post2
+
 
 --
 
@@ -13,7 +16,7 @@ pip install dash-bootstrap-components
 pip install gunicorn
 pip install pvlib
 
-
+pip freeze > requirements.txt
 
 
 --

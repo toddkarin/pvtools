@@ -400,7 +400,7 @@ def haversine_distance(lat1, lon1, lat2, lon2):
 def closest_degrees(lat_find, lon_find, lat_list, lon_list):
 
     distance = np.sqrt( (lat_find-lat_list)**2 + (lon_find-lon_list)**2 )
-    closest_index = np.argmin(distance)
+    closest_index = np.argmin(np.array(distance))
     distance_in_degrees = distance[closest_index]
 
     return (closest_index, distance_in_degrees)

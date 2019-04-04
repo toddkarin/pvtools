@@ -80,16 +80,16 @@ layout = dbc.Container(
                             src=app.get_asset_url(
                                 'string_length_screenshot.png'),
                             style={'width': '100%'}),
-                        html.H2("Photovoltaic Climate Zones"),
-                        html.P(
-                            """Photovoltaic climate zones provides climate 
-                            zones using climate-related stressors specific to 
-                            photovoltaic degradation. 
-
-                            """
-                        ),
-                        html.A( dbc.Button("Launch Tool", color="secondary"),
-                                href='pvcz'),
+                        # html.H2("Photovoltaic Climate Zones"),
+                        # html.P(
+                        #     """Photovoltaic climate zones provides climate
+                        #     zones using climate-related stressors specific to
+                        #     photovoltaic degradation.
+                        #
+                        #     """
+                        # ),
+                        # html.A( dbc.Button("Launch Tool", color="secondary"),
+                        #         href='pvcz'),
                         # dcc.Graph(
                         #     figure={"data": [{"x": [1, 2, 3], "y": [1, 4, 9]}]}
                         # ),

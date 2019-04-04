@@ -27,32 +27,8 @@ from app import app
 # Line is important for Heroku.
 server = app.server
 
-
-# session_id = str(uuid.uuid4())
-# mapbox_access_token = 'pk.eyJ1IjoidG9kZGthcmluIiwiYSI6Ik1aSndibmcifQ.hwkbjcZevafx2ApulodXaw'
-
-
-# import home, string_length_calculator
+# Load layouts for different pages
 import home, pvcz, about, string_length_calculator
-
-# # Cache for saving local files.
-# cache = Cache(app.server, config={
-#     'CACHE_TYPE': 'redis',
-#     # Note that filesystem cache doesn't work on systems with ephemeral
-#     # filesystems like Heroku.
-#     'CACHE_TYPE': 'filesystem',
-#     'CACHE_DIR': 'cache-directory',
-#
-#     # should be equal to maximum number of users on the app at a single time
-#     # higher numbers will store more data in the filesystem / redis cache
-#     'CACHE_THRESHOLD': 200
-# })
-#
-#
-
-# NSRDB_pickle_database = '/Users/toddkarin/Documents/NSRDB_pickle/'
-
-
 
 
 app.layout = html.Div([
