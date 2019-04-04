@@ -263,6 +263,11 @@ def get_s3_weather_data(filename):
             info[f] = info[f][0]
 
     weather = pd.DataFrame.from_dict({
+        'year': info['year'],
+        'month': info['month'],
+        'day': info['day'],
+        'hour': info['hour'],
+        'minute': info['minute'],
         'dni': info['dni'],
         'ghi': info['ghi'],
         'dhi': info['dhi'],

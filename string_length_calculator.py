@@ -30,6 +30,7 @@ import pandas as pd
 import datetime
 import io
 import pvtoolslib
+import urllib
 
 
 from app import app
@@ -71,6 +72,9 @@ layout = dbc.Container([
     consortium [4]. 
 
     """),
+    html.P("""In order to download raw data, please use Firefox.
+    """),
+
     html.H2('Methods'),
     html.P("""The national electric code 2017 lists three different methods 
     for determining the maximum string length in Article 690.7:
@@ -419,7 +423,7 @@ layout = dbc.Container([
     ]),
 
     html.H3('Calculate Voc'),
-    html.P('Press "Calculate" to run Voc calculation (~5 seconds)'),
+    html.P('Press "Calculate" to run Voc calculation (15-20 seconds)'),
     dbc.Button(id='submit-button', n_clicks=0, children='Calculate',
                color="secondary"),
     # html.P(' '),
@@ -525,6 +529,13 @@ def update_output_div(lat, lon):
         closest_lat, closest_lon)
     # return str(n_clicks)
 
+#
+# @app.callback(
+#     Output('map','config'),
+#     [Input('map','figure')]
+# )
+# def forcezoom(f):
+#     return(dict(scrollZoom = True))
 
 # @app.callback(
 #     Output('map', 'figure'),
@@ -532,20 +543,21 @@ def update_output_div(lat, lon):
 #      Input('lat', 'value'),
 #      Input('lon', 'value')])
 @app.callback(
-    Output('map', 'figure'),
+    [Output('map','figure'),
+     Output('map','config')
+     ],
     [Input('get-weather', 'n_clicks')],
     [State('lat', 'value'),
      State('lon', 'value')])
 def update_map_callback(n_clicks, lat, lon):
     filedata = pvtoolslib.get_s3_filename_df()
 
-    print(filedata)
     filedata_closest = nsrdbtools.find_closest_datafiles(float(lat), float(lon),
                                                          filedata)
 
     closest_lat = np.array(filedata_closest['lat'])[0]
     closest_lon = np.array(filedata_closest['lon'])[0]
-    return {
+    map_figure = {
         'data': [
             go.Scattermapbox(
                 lat=filedata['lat'],
@@ -610,6 +622,7 @@ def update_map_callback(n_clicks, lat, lon):
                 borderwidth=2
             )
         )}
+    return map_figure, dict(scrollZoom = True)
 
 
 # @app.callback(
@@ -849,12 +862,11 @@ def update_graph(n_clicks, module_name, racking_model,
         'ground_coverage_ratio': float(ground_coverage_ratio)}
 
 
-    print('Number clicks: ' + str(n_clicks))
+
     if n_clicks<1:
         print('Not running simulation.')
         return [], ''
 
-    print(system_parameters)
     module_parameters = pvtoolslib.sandia_modules[module_name]
 
     # Overwrite provided module parameters.
@@ -877,47 +889,40 @@ def update_graph(n_clicks, module_name, racking_model,
     module_parameters['B4'] = float(B4)
     module_parameters['B5'] = float(B5)
 
-
     filedata = pvtoolslib.get_s3_filename_df()
     filedata_closest = nsrdbtools.find_closest_datafiles(float(lat), float(lon),
                                                          filedata)
 
 
-    # filedata = vocmaxlib.filedata
-    # filedata_closest = nsrdbtools.find_closest_datafiles(float(lat), float(lon),
-    #                                                      filedata)
-
-
-
-
 
     print('Getting weather data...')
     weather, info = pvtoolslib.get_s3_weather_data(filedata_closest['filename'].iloc[0])
-    print('done.')
-    # print(info.keys())
-
-    # Get weather data
-    # weather_fullpath = filedata_closest['weather_fullpath'].to_list()[0]
-    # info_fullpath = filedata_closest['info_fullpath'].to_list()[0]
-
-    # weather = nsrdbtools.import_weather_pickle(weather_fullpath)
-    # info = pd.read_pickle(info_fullpath)
-
-    print('done')
-
-    # weather, info = get_weather_data(session_id)
 
     print('Simulating system...')
     (df, mc) = vocmaxlib.calculate_max_voc(weather, info,
                                            module_parameters=module_parameters,
                                            system_parameters=system_parameters)
 
-    # print(weather['temp_cell'])
+
+    print('Generating files for downloading...')
+    df_temp = df.copy()
+    df_temp['wind_speed'] = df_temp['wind_speed'].map(lambda x: '%2.1f' % x)
+    df_temp['v_oc'] = df_temp['v_oc'].map(lambda x: '%3.2f' % x)
+    df_temp['temp_cell'] = df_temp['temp_cell'].map(lambda x: '%2.1f' % x)
+
+    csv_string = "data:text/csv;charset=utf-8," + urllib.parse.quote(
+        df_temp.to_csv(index=False, encoding='utf-8',float_format='%.3f')
+    )
+    csv_string_one_year = "data:text/csv;charset=utf-8," + urllib.parse.quote(
+        df_temp[0:17520].to_csv(index=False, encoding='utf-8',float_format='%.3f')
+    )
+
 
     print('done')
-    y, c = np.histogram(df.v_oc,
-                        bins=np.linspace(df.v_oc.max() * 0.75,
-                                         df.v_oc.max() + 1, 500))
+
+    y, c = np.histogram(df['v_oc'],
+                        bins=np.linspace(df['v_oc'].max() * 0.75,
+                                         df['v_oc'].max() + 1, 500))
 
     years = list(set(weather.index.year))
     yearly_min_temp = []
@@ -1349,19 +1354,31 @@ def update_graph(n_clicks, module_name, racking_model,
                 )
             }
         ),
-        # html.A(html.Button('Download results as csv'),href='download_simulation_data'),
+        # html.A(html.Button('Download results as csv'),href=''),
         # dbc.Button('Download results as csv',id='download_csv',n_clicks=0),
         html.H4('Results summary'),
         # html.Details([
             # html.Summary('View text summary'),
         html.Div([html.P(s) for s in summary],
-                 style={'marginLeft': 10})
+                 style={'marginLeft': 10}),
         # ]),
         # html.P(
-        #     html.A('Download data as csv file', id='download-data',href=save_filename)
+        #     html.A('Download full data as csv file (use firefox)', id='download-data',href=save_filename)
         # ),
-        # html.A('Download summary as csv file', id='download-summary',
-        #        href=info_filename),
+        html.Div([
+            html.A('Download 1 year raw data as csv',
+               id='download-link',
+               download='rawdata.csv',
+               href=csv_string_one_year,
+               target='_blank'),
+            ]),
+        html.Div([
+        html.A('Download all raw data as csv (use firefox)',
+               id='download-link',
+               download='rawdata.csv',
+               href=csv_string,
+               target='_blank'),
+            ]),
         # html.Button(id='download-summary', children='Download Summary'),
         # html.Button(id='download-data', children='Download Data as CSV')
     ]
