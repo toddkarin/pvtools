@@ -910,12 +910,15 @@ def update_graph(n_clicks, module_name, racking_model,
     df_temp['v_oc'] = df_temp['v_oc'].map(lambda x: '%3.2f' % x)
     df_temp['temp_cell'] = df_temp['temp_cell'].map(lambda x: '%2.1f' % x)
 
-    csv_string = "data:text/csv;charset=utf-8," + urllib.parse.quote(
-        df_temp.to_csv(index=False, encoding='utf-8',float_format='%.3f')
-    )
+    # csv_string = "data:text/csv;charset=utf-8," + urllib.parse.quote(
+    #     df_temp.to_csv(index=False, encoding='utf-8',float_format='%.3f')
+    # )
+
+    csv_string = "data:text/csv;charset=utf-8,"
     csv_string_one_year = "data:text/csv;charset=utf-8," + urllib.parse.quote(
         df_temp[0:17520].to_csv(index=False, encoding='utf-8',float_format='%.3f')
     )
+
 
 
     print('done')
