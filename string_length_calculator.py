@@ -789,9 +789,7 @@ def prepare_data(categ):
 
 
 #
-@app.callback([Output('graphs', 'children'),
-               Output('results-store','children')
-               ],
+@app.callback(Output('graphs', 'children'),
               [Input('submit-button', 'n_clicks')
                ],
               [State('module_name', 'value'),
@@ -1370,12 +1368,12 @@ def update_graph(n_clicks, module_name, racking_model,
 
 
 
-    print('converting to json...')
-    weather_json = weather.to_json()
-    print('done')
+    # print('converting to json...')
+    # weather_json = weather.to_json()
+    # print('done')
 
     print('** Calculation done.')
-    return return_layout, weather_json
+    return return_layout
 #
 #
 # @app.callback([],
