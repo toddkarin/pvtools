@@ -15,7 +15,6 @@ docutils==0.14
 enum34==1.1.6
 Flask==1.0.2
 Flask-Compress==1.4.0
-futures==3.2.0
 gunicorn==19.9.0
 idna==2.8
 ipython-genutils==0.2.0
