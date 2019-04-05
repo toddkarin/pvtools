@@ -28,8 +28,8 @@ def calculate_max_voc(weather,info, module_parameters=None,system_parameters=Non
     inverter_parameters = cec_inverters['Power_Electronics__FS1700CU15__690V__690V__CEC_2018_']
 
     # Set location
-    location = pvlib.location.Location(latitude=info['lat'],
-                                       longitude=info['lon'])
+    location = pvlib.location.Location(latitude=info['Latitude'],
+                                       longitude=info['Longitude'])
 
     # Weather must have field dni, dhi, ghi, temp_air, and wind_speed.
 

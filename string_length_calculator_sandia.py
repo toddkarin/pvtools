@@ -898,19 +898,18 @@ def update_graph(n_clicks, module_name, racking_model,
     print('Getting weather data...')
     weather, info = pvtoolslib.get_s3_weather_data(filedata_closest['filename'].iloc[0])
 
-    # print(info.keys())
+    print(info.keys())
     print('Simulating system...')
     (df, mc) = vocmaxlib.calculate_max_voc(weather, info,
                                            module_parameters=module_parameters,
                                            system_parameters=system_parameters)
 
-
     info_df = pd.DataFrame(
-        {'Weather data source': info['Source'],
-         'Location ID': info['Location_ID'],
-         'Latitude': info['Latitude'],
-         'Longitude': info['Longitude'],
-         'Elevation': info['Elevation'],
+        {'Weather data source': info['source'],
+         'Location ID': info['location_id'],
+         'Latitude': info['lat'],
+         'Longitude': info['lon'],
+         'Elevation': info['elevation'],
          'Time Zone': info['local_time_zone'],
          'Data time step (hours)': info['interval_in_hours'],
          'Data time length (years)': info['timedelta_in_years'],
@@ -983,29 +982,29 @@ def update_graph(n_clicks, module_name, racking_model,
     voc_P99 = np.percentile(df['v_oc'][np.logical_not(np.isnan(df['v_oc']))],
                             99)
 
-    # results_dict = {
-    #     'Source': info['source'],
-    #     'Location ID': info['location_id'],
-    #     'Elevation': info['elevation'],
-    #     'Latitude': info['lat'],
-    #     'Longitude': info['lon'],
-    #     # 'DHI Units': info['DHI Units'][0],
-    #     # 'DNI Units': info['DNI Units'][0],
-    #     # 'GHI Units': info['GHI Units'][0],
-    #     # 'V_oc Units': 'V',
-    #     # 'Wind Speed Units': info['Wind Speed'][0],
-    #     'interval_in_hours': info['interval_in_hours'],
-    #     'timedelta_in_years': info['timedelta_in_years'],
-    #     'NSRDB Version': info['version'],
-    #     'PVLIB Version': pvlib._version.get_versions()['version'],
-    #     'PVTools Version': '0.0.1',
-    #     'Date Created': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # }
-    # info_df = pd.DataFrame(results_dict, index=[0])
+    results_dict = {
+        'Source': info['source'],
+        'Location ID': info['location_id'],
+        'Elevation': info['elevation'],
+        'Latitude': info['lat'],
+        'Longitude': info['lon'],
+        # 'DHI Units': info['DHI Units'][0],
+        # 'DNI Units': info['DNI Units'][0],
+        # 'GHI Units': info['GHI Units'][0],
+        # 'V_oc Units': 'V',
+        # 'Wind Speed Units': info['Wind Speed'][0],
+        'interval_in_hours': info['interval_in_hours'],
+        'timedelta_in_years': info['timedelta_in_years'],
+        'NSRDB Version': info['version'],
+        'PVLIB Version': pvlib._version.get_versions()['version'],
+        'PVTools Version': '0.0.1',
+        'Date Created': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    info_df = pd.DataFrame(results_dict, index=[0])
 
     summary = [
-        'Latitude: {:0.4f}'.format(info['Latitude']),
-        'Longitude: {:0.4f}'.format(info['Longitude']),
+        'Latitude: {:0.4f}'.format(info['lat']),
+        'Longitude: {:0.4f}'.format(info['lon']),
         'Maximum Design String Voltage: {:0.2f} V'.format(max_string_voltage),
         'Historical Max Voc: {:0.3f} V'.format(df.v_oc.max()),
         'P99.5 Voc: {:0.3f} V'.format(voc_P99p5),
@@ -1015,8 +1014,8 @@ def update_graph(n_clicks, module_name, racking_model,
         'Traditional Max String length: {:0.0f} modules'.format(
             np.floor(max_string_voltage / voc_1sun_min_temp)),
         'Yearly mean minimum ambient temperature: {:0.3f} C'.format(mean_yearly_min_ambient_temp),
-        'Weather data source: {}'.format(info['Source']),
-        'Location ID: {}'.format(info['Location_ID']),
+        'Weather data source: {}'.format(info['source']),
+        'Location ID: {}'.format(info['location_id']),
         'Weather data start date: {}'.format(
             df.index[0].strftime("%Y-%m-%d %H:%M:%S")),
         'Weather data end date: {}'.format(

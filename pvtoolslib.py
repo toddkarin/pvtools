@@ -15,6 +15,8 @@ import glob
 #     import pickle
 #
 
+version = '0.0.1'
+
 sandia_modules = pvlib.pvsystem.retrieve_sam('SandiaMod')
 
 # Bucket for storing s3
@@ -258,9 +260,22 @@ def get_s3_weather_data(filename):
 
     info = get_s3_npz(filename)
 
+
     for f in info:
-        if len(info[f]) == 1:
-            info[f] = info[f][0]
+        try:
+            if info[f].dtype == np.dtype('<U5'):
+                info[f] = str(info[f])
+            elif info[f].dtype == np.dtype('<U6'):
+                info[f] = str(info[f])
+            elif info[f].dtype == np.dtype('int64'):
+                info[f] = int(info[f])
+            elif info[f].dtype == np.dtype('float64'):
+                info[f] = float(info[f])
+
+
+        except:
+            print(f)
+
 
     weather = pd.DataFrame.from_dict({
         'year': info['year'],
