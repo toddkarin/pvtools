@@ -179,271 +179,298 @@ layout = dbc.Container([
     ],
              style={'align': 'left'}),
     html.H2('Simulation Parameters'),
-    dbc.Label("""Either select module name from data base or manually enter 
-    parameters for the  California Energy Commission (CEC) 6-paramater model 
-    [4,5]. 
-    
-    """),
-    dbc.Tabs([
-        dbc.Tab([
-            dbc.Card(
-                dbc.CardBody(
-                    [
-                        dbc.Label("""Module Name (from CEC database). This 
-                        method uses 'no_loss' AOI model and fraction of 
-                        diffuse irradiance 'FD' equal to 1. 
-                        
-                        """),
-                        dcc.Dropdown(
-                            id='module_name',
-                            options=pvtoolslib.cec_module_dropdown_list,
-                            value=pvtoolslib.cec_module_dropdown_list[0]['value'],
-                            style={'max-width': 500}
-                        ),
-                     ],
-                )
-            )
-        ], tab_id='lookup', label='Library Lookup'),
-        dbc.Tab([
-            dbc.Card(
-                dbc.CardBody(
-                    [
-                        html.P("""Manually set module parameters.
-                        
-                        """),
-                        dbc.Label("""Module name 
+    dbc.Card([
+        dbc.CardHeader('Module Parameters'),
+        dbc.CardBody([
+            dbc.Label("""To select module parameters from a library of common 
+            modules, select 'Library Lookup'. Or select 'manual entry' to 
+            enter the parameters for the  California Energy Commission (CEC) 
+            6-paramater model [4,5]. 
+            
+            """),
+            dbc.Tabs([
+                dbc.Tab([
+                    dbc.Card(
+                        dbc.CardBody(
+                            [
+                                dbc.Label("""Module name (from CEC database).
+                                
+                                """),
+                                dcc.Dropdown(
+                                    id='module_name',
+                                    options=pvtoolslib.cec_module_dropdown_list,
+                                    value=pvtoolslib.cec_module_dropdown_list[0]['value'],
+                                    style={'max-width': 500},
+                                ),
+                                html.Div(id='module_name_iv')
+                             ],
+                        )
+                    )
+                ], tab_id='lookup', label='Library Lookup'),
+                dbc.Tab([
+                    dbc.Card(
+                        dbc.CardBody(
+                            [
+                                html.P("""Manually set module parameters.
+                                
+                                """),
+                                dbc.Label("""Module name 
+        
+                                            """),
+                                dbc.Input(id='module_name_manual',
+                                          value='Custom Module',
+                                          type='text',
+                                          style={'max-width': 200}),
+                                dbc.Label("""alpha_sc: The short-circuit current 
+                                temperature coefficient of the module in units of A/C 
+        
+                                            """),
+                                dbc.Input(id='alpha_sc', value='0.007997', type='text',
+                                          style={'max-width': 200}),
+                                dbc.Label("""a_ref: The product of the usual diode 
+                                ideality factor (n, unitless), number of cells in 
+                                series (Ns), and cell thermal voltage at reference 
+                                conditions, in units of V. 
+        
+                                            """),
+                                dbc.Input(id='a_ref', value='1.6413', type='text',
+                                          style={'max-width': 200}),
+                                dbc.Label("""I_L_ref: The light-generated current (or 
+                                photocurrent) at reference conditions, in amperes. 
+        
+                                            """),
+                                dbc.Input(id='I_L_ref', value='7.843', type='text',
+                                          style={'max-width': 200}),
+                                dbc.Label("""I_o_ref: The dark or diode reverse 
+                                saturation current at reference conditions, in amperes. 
+        
+                                            """),
+                                dbc.Input(id='I_o_ref', value='1.936e-09', type='text',
+                                          style={'max-width': 200}),
+                                dbc.Label("""R_sh_ref: The shunt resistance at 
+                                reference conditions, in ohms. 
+        
+                                            """),
+                                dbc.Input(id='R_sh_ref', value='839.4', type='text',
+                                          style={'max-width': 200}),
+                                dbc.Label("""R_s: The series resistance at reference 
+                                conditions, in ohms. 
+        
+                                            """),
+                                dbc.Input(id='R_s', value='0.359', type='text',
+                                          style={'max-width': 200}),
+                                dbc.Label("""Adjust: The adjustment to the 
+                                temperature coefficient for short circuit current, 
+                                in percent. 
+        
+                                            """),
+                                dbc.Input(id='Adjust', value='16.5', type='text',
+                                          style={'max-width': 200}),
+                                dbc.Label("""FD: Fraction of diffuse irradiance
+        
+                                            """),
+                                dbc.Input(id='FD', value='1', type='text',
+                                          style={'max-width': 200}),
+                                # dbc.Label("""AOI model. Loss model for
+                                # angle-of-incidence losses. These occur due to
+                                # reflection from surfaces above the cell.
+                                #
+                                #             """),
+                                # dcc.Dropdown(
+                                #     id='aoi_model',
+                                #     options=[
+                                #         {'label': 'ashrae',
+                                #          'value': 'ashrae'},
+                                #         {'label': 'no_loss',
+                                #          'value': 'no_loss'},
+                                #     ],
+                                #     value='ashrae',
+                                #     style={'max-width': 500}
+                                # ),
+                                # dbc.Label("""Ashrae IAM coefficient. 'b' coefficient
+                                # describing incidence angle modifier losses. Typical
+                                # value is 0.05.
+                                #
+                                #             """),
+                                # dbc.Input(id='ashrae_iam_param', value='0.05',
+                                #           type='text',
+                                #           style={'max-width': 200}),
+                             ]
+                        )
+                    )
+                ], tab_id='manual', label='Manual Entry')
+            ], id='module_parameter_input_type', active_tab='lookup'),
+        ])
+    ]),
+    html.P(''),
+    dbc.Card([
+        dbc.CardHeader('Thermal model'),
+        dbc.CardBody([
+            html.P("""The thermal model parameters determine how the cell 
+            temperature depends on ambient temperature, plane-of-array 
+            irradiance and wind speed. 
+            
+            """),
 
-                                    """),
-                        dbc.Input(id='module_name_manual',
-                                  value='Custom Module',
-                                  type='text',
-                                  style={'max-width': 200}),
-                        dbc.Label("""alpha_sc: The short-circuit current 
-                        temperature coefficient of the module in units of A/C 
+            dbc.Tabs([
+                dbc.Tab([
+                    dbc.Card(
+                        dbc.CardBody(
+                            [dbc.Label('Surface Tilt (degrees)'),
+                             dcc.Dropdown(
+                                 id='racking_model',
+                                 options=[
+                                     {'label': 'open rack cell glassback',
+                                      'value': 'open_rack_cell_glassback'},
+                                     {'label': 'roof mount cell glassback',
+                                      'value': 'roof_mount_cell_glassback'},
+                                     {'label': 'insulated back polymerback',
+                                      'value': 'insulated_back_polymerback'},
+                                     {'label': 'open rack polymer thinfilm steel',
+                                      'value': 'open_rack_polymer_thinfilm_steel'},
+                                     {'label': '22x concentrator tracker',
+                                      'value': '22x_concentrator_tracker'}
+                                 ],
+                                 value='open_rack_cell_glassback',
+                                 style={'max-width': 500}
+                             ),
+                             ],
 
-                                    """),
-                        dbc.Input(id='alpha_sc', value='0.007997', type='text',
-                                  style={'max-width': 200}),
-                        dbc.Label("""a_ref: The product of the usual diode 
-                        ideality factor (n, unitless), number of cells in 
-                        series (Ns), and cell thermal voltage at reference 
-                        conditions, in units of V. 
+                        )
+                    )
+                ], tab_id='lookup', label='Default models'),
+                dbc.Tab([
+                    dbc.Card(
+                        dbc.CardBody(
+                            [
+                                dbc.Label("""a: Empirically-determined coefficient 
+                                establishing the upper limit for module temperature 
+                                at low wind speeds and high solar irradiance 
+                                
+                                """),
+                                dbc.Input(id='a', value=-3.47, type='number',
+                                          style={'max-width': 200}),
+                                dbc.Label("""b: Empirically-determined coefficient 
+                                establishing the rate at which module temperature 
+                                drops as wind speed increases (s/m) 
+                                
+                                """),
+                                dbc.Input(id='b', value=-0.0594, type='number',
+                                          style={'max-width': 200}),
+                                dbc.Label("""DT: temperature difference between cell 
+                                and module at reference irradiance (C) 
+                                
+                                """),
+                                dbc.Input(id='DT', value=3, type='number',
+                                          style={'max-width': 200})
+                             ]
+                        )
+                    )
+                ], tab_id='manual', label='Manual Entry')
+            ], id='thermal_model_input_type', active_tab='lookup'),
+        ])
+    ]),
+    html.P(''),
+    dbc.Card([
+        dbc.CardHeader('Racking Type'),
+        dbc.CardBody([
+            dcc.Markdown("""Choose the mounting configuration of the array. 
+            
+            """),
+            dbc.Tabs([
+                dbc.Tab([
+                    dbc.Card(
+                        dbc.CardBody(
+                            [dbc.Label('Surface Tilt (degrees)'),
+                             dbc.Input(id='surface_tilt', value='30', type='text',
+                                       style={'max-width': 200}),
 
-                                    """),
-                        dbc.Input(id='a_ref', value='1.6413', type='text',
-                                  style={'max-width': 200}),
-                        dbc.Label("""I_L_ref: The light-generated current (or 
-                        photocurrent) at reference conditions, in amperes. 
+                             dbc.Label('Surface Azimuth (degrees)'),
+                             dbc.Input(id='surface_azimuth', value='180', type='text',
+                                       style={'max-width': 200}),
+                             dbc.FormText("""For module face oriented due South use 180. 
+                             For module face oreinted due East use 90"""),
 
-                                    """),
-                        dbc.Input(id='I_L_ref', value='7.843', type='text',
-                                  style={'max-width': 200}),
-                        dbc.Label("""I_o_ref: The dark or diode reverse 
-                        saturation current at reference conditions, in amperes. 
+                             ],
 
-                                    """),
-                        dbc.Input(id='I_o_ref', value='1.936e-09', type='text',
-                                  style={'max-width': 200}),
-                        dbc.Label("""R_sh_ref: The shunt resistance at 
-                        reference conditions, in ohms. 
-
-                                    """),
-                        dbc.Input(id='R_sh_ref', value='839.4', type='text',
-                                  style={'max-width': 200}),
-                        dbc.Label("""R_s: The series resistance at reference 
-                        conditions, in ohms. 
-
-                                    """),
-                        dbc.Input(id='R_s', value='0.359', type='text',
-                                  style={'max-width': 200}),
-                        dbc.Label("""Adjust: The adjustment to the 
-                        temperature coefficient for short circuit current, 
-                        in percent. 
-
-                                    """),
-                        dbc.Input(id='Adjust', value='16.5', type='text',
-                                  style={'max-width': 200}),
-                        dbc.Label("""FD: Fraction of diffuse irradiance
-
-                                    """),
-                        dbc.Input(id='FD', value='1', type='text',
-                                  style={'max-width': 200}),
-                        # dbc.Label("""AOI model. Loss model for
-                        # angle-of-incidence losses. These occur due to
-                        # reflection from surfaces above the cell.
-                        #
-                        #             """),
-                        # dcc.Dropdown(
-                        #     id='aoi_model',
-                        #     options=[
-                        #         {'label': 'ashrae',
-                        #          'value': 'ashrae'},
-                        #         {'label': 'no_loss',
-                        #          'value': 'no_loss'},
-                        #     ],
-                        #     value='ashrae',
-                        #     style={'max-width': 500}
-                        # ),
-                        # dbc.Label("""Ashrae IAM coefficient. 'b' coefficient
-                        # describing incidence angle modifier losses. Typical
-                        # value is 0.05.
-                        #
-                        #             """),
-                        # dbc.Input(id='ashrae_iam_param', value='0.05',
-                        #           type='text',
-                        #           style={'max-width': 200}),
-                     ]
-                )
-            )
-        ], tab_id='manual', label='Manual Entry')
-    ], id='module_parameter_input_type', active_tab='lookup'),
-
-
-    html.Label('Choose thermal racking model'),
-
-    dbc.Tabs([
-        dbc.Tab([
-            dbc.Card(
-                dbc.CardBody(
-                    [dbc.Label('Surface Tilt (degrees)'),
-                     dcc.Dropdown(
-                         id='racking_model',
-                         options=[
-                             {'label': 'open rack cell glassback',
-                              'value': 'open_rack_cell_glassback'},
-                             {'label': 'roof mount cell glassback',
-                              'value': 'roof_mount_cell_glassback'},
-                             {'label': 'insulated back polymerback',
-                              'value': 'insulated_back_polymerback'},
-                             {'label': 'open rack polymer thinfilm steel',
-                              'value': 'open_rack_polymer_thinfilm_steel'},
-                             {'label': '22x concentrator tracker',
-                              'value': '22x_concentrator_tracker'}
-                         ],
-                         value='open_rack_cell_glassback',
-                         style={'max-width': 500}
-                     ),
-                     ],
-
-                )
-            )
-        ], tab_id='lookup', label='Default models'),
-        dbc.Tab([
-            dbc.Card(
-                dbc.CardBody(
-                    [
-                        dbc.Label("""a: Empirically-determined coefficient 
-                        establishing the upper limit for module temperature 
-                        at low wind speeds and high solar irradiance 
-                        
-                        """),
-                        dbc.Input(id='a', value=-3.47, type='number',
-                                  style={'max-width': 200}),
-                        dbc.Label("""b: Empirically-determined coefficient 
-                        establishing the rate at which module temperature 
-                        drops as wind speed increases (s/m) 
-                        
-                        """),
-                        dbc.Input(id='b', value=-0.0594, type='number',
-                                  style={'max-width': 200}),
-                        dbc.Label("""DT: temperature difference between cell 
-                        and module at reference irradiance (C) 
-                        
-                        """),
-                        dbc.Input(id='DT', value=3, type='number',
-                                  style={'max-width': 200})
-                     ]
-                )
-            )
-        ], tab_id='manual', label='Manual Entry')
-    ], id='thermal_model_input_type', active_tab='lookup'),
-
-    html.Label('Choose fixed tilt or single axis tracker'),
-
-    dbc.Tabs([
-        dbc.Tab([
-            dbc.Card(
-                dbc.CardBody(
-                    [dbc.Label('Surface Tilt (degrees)'),
-                     dbc.Input(id='surface_tilt', value='30', type='text',
-                               style={'max-width': 200}),
-
-                     dbc.Label('Surface Azimuth (degrees)'),
-                     dbc.Input(id='surface_azimuth', value='180', type='text',
-                               style={'max-width': 200}),
-                     dbc.FormText("""For module face oriented due South use 180. 
-                     For module face oreinted due East use 90"""),
-
-                     ],
-
-                )
-            )
-        ], tab_id='fixed_tilt', label='Fixed Tilt'),
-        dbc.Tab([
-            dbc.Card(
-                dbc.CardBody(
-                    [dbc.Label('Axis Tilt (degrees)'),
-                     dbc.Input(id='axis_tilt', value='0', type='text',
-                               style={'max-width': 200}),
-                     dbc.FormText("""The tilt of the axis of rotation (i.e, 
-                the y-axis defined by axis_azimuth) with respect to 
-                horizontal, in decimal degrees."""),
-                     dbc.Label('Axis Azimuth (degrees)'),
-                     dbc.Input(id='axis_azimuth', value='0', type='text',
-                               style={'max-width': 200}),
-                     dbc.FormText("""A value denoting the compass direction along 
-                which the axis of rotation lies. Measured in decimal degrees 
-                East of North."""),
-                     dbc.Label('Max Angle (degrees)'),
-                     dbc.Input(id='max_angle', value='90', type='text',
-                               style={'max-width': 200}),
-                     dbc.FormText("""A value denoting the maximum rotation angle, 
-                in decimal degrees, of the one-axis tracker from its 
-                horizontal position (horizontal if axis_tilt = 0). A 
-                max_angle of 90 degrees allows the tracker to rotate to a 
-                vertical position to point the panel towards a horizon. 
-                max_angle of 180 degrees allows for full rotation."""),
-                     dbc.Label('Backtrack'),
-                     dbc.FormText("""Controls whether the tracker has the 
-                 capability to ''backtrack'' to avoid row-to-row shading. False 
-                 denotes no backtrack capability. True denotes backtrack 
-                 capability."""),
-                     dbc.RadioItems(
-                         options=[
-                             {"label": "True", "value": True},
-                             {"label": "False", "value": False},
-                         ],
-                         value=True,
-                         id="backtrack",
-                     ),
-                     dbc.Label('Ground Coverage Ratio'),
-                     dbc.Input(id='ground_coverage_ratio', value='0.286',
-                               type='text',
-                               style={'max-width': 200}),
-                     dbc.FormText("""A value denoting the ground coverage ratio 
-                 of a tracker system which utilizes backtracking; i.e. the 
-                 ratio between the PV array surface area to total ground 
-                 area. A tracker system with modules 2 meters wide, centered 
-                 on the tracking axis, with 6 meters between the tracking 
-                 axes has a gcr of 2/6=0.333. If gcr is not provided, 
-                 a gcr of 2/7 is default. gcr must be <=1"""),
-                     ]
-                )
-            )
-        ], tab_id='single_axis_tracker', label='Single Axis Tracker')
-    ], id='mount_type', active_tab='fixed_tilt'),
-
-    dbc.Label('Max string voltage (V)'),
-    dbc.Input(id='max_string_voltage',
-              value=1500,
-              type='number',
-              style={'max-width': 200}),
-    dbc.FormText('Maximum string voltage for calculating string length'),
+                        )
+                    )
+                ], tab_id='fixed_tilt', label='Fixed Tilt'),
+                dbc.Tab([
+                    dbc.Card(
+                        dbc.CardBody(
+                            [dbc.Label('Axis Tilt (degrees)'),
+                             dbc.Input(id='axis_tilt', value='0', type='text',
+                                       style={'max-width': 200}),
+                             dbc.FormText("""The tilt of the axis of rotation (i.e, 
+                        the y-axis defined by axis_azimuth) with respect to 
+                        horizontal, in decimal degrees."""),
+                             dbc.Label('Axis Azimuth (degrees)'),
+                             dbc.Input(id='axis_azimuth', value='0', type='text',
+                                       style={'max-width': 200}),
+                             dbc.FormText("""A value denoting the compass direction along 
+                        which the axis of rotation lies. Measured in decimal degrees 
+                        East of North."""),
+                             dbc.Label('Max Angle (degrees)'),
+                             dbc.Input(id='max_angle', value='90', type='text',
+                                       style={'max-width': 200}),
+                             dbc.FormText("""A value denoting the maximum rotation angle, 
+                        in decimal degrees, of the one-axis tracker from its 
+                        horizontal position (horizontal if axis_tilt = 0). A 
+                        max_angle of 90 degrees allows the tracker to rotate to a 
+                        vertical position to point the panel towards a horizon. 
+                        max_angle of 180 degrees allows for full rotation."""),
+                             dbc.Label('Backtrack'),
+                             dbc.FormText("""Controls whether the tracker has the 
+                         capability to ''backtrack'' to avoid row-to-row shading. False 
+                         denotes no backtrack capability. True denotes backtrack 
+                         capability."""),
+                             dbc.RadioItems(
+                                 options=[
+                                     {"label": "True", "value": True},
+                                     {"label": "False", "value": False},
+                                 ],
+                                 value=True,
+                                 id="backtrack",
+                             ),
+                             dbc.Label('Ground Coverage Ratio'),
+                             dbc.Input(id='ground_coverage_ratio', value='0.286',
+                                       type='text',
+                                       style={'max-width': 200}),
+                             dbc.FormText("""A value denoting the ground coverage ratio 
+                         of a tracker system which utilizes backtracking; i.e. the 
+                         ratio between the PV array surface area to total ground 
+                         area. A tracker system with modules 2 meters wide, centered 
+                         on the tracking axis, with 6 meters between the tracking 
+                         axes has a gcr of 2/6=0.333. If gcr is not provided, 
+                         a gcr of 2/7 is default. gcr must be <=1"""),
+                             ]
+                        )
+                    )
+                ], tab_id='single_axis_tracker', label='Single Axis Tracker')
+            ], id='mount_type', active_tab='fixed_tilt'),
+        ])
+    ]),
+    html.P(''),
+    dbc.Card([
+        dbc.CardHeader(['String Voltage Limit']),
+        dbc.CardBody([
+            dcc.Markdown("""Set the design max string voltage for the PV system. 
+            
+            """),
+            dbc.Label('Max string voltage (V)'),
+            dbc.Input(id='max_string_voltage',
+                      value=1500,
+                      type='number',
+                      style={'max-width': 200}),
+            dbc.FormText('Maximum string voltage for calculating string length'),
+            ])
+        ]),
 
     html.H3('Calculate Voc'),
     html.P('Press "Calculate" to run Voc calculation (~10 seconds)'),
     dbc.Button(id='submit-button', n_clicks=0, children='Calculate',
-               color="secondary"),
+               color="primary"),
     # html.P(' '),
     # html.A(dbc.Button(id='submit-button-with-download',
     #                   n_clicks=0,
@@ -745,6 +772,42 @@ def update_Voco(racking_model):
 #     # return json.dumps(clickData, indent=2)
 #
 #
+
+
+@app.callback(Output('module_name_iv', 'children'),
+              [Input('module_name', 'value')
+               ])
+def prepare_data(module_name):
+    print(module_name)
+    module_parameters = pvtoolslib.cec_modules[module_name].to_dict()
+    module_parameters['FD'] = 1
+    module_parameters['name'] = module_name
+    module_parameters['aoi_model'] = 'no_loss'
+
+    # html.Details([
+    #     html.Summary(
+    #         "Can I run the code myself?"),
+
+    info_df = pd.DataFrame.from_dict({
+        'Parameter': list(module_parameters.keys())
+    })
+
+    info_df['value'] = info_df['Parameter'].map(module_parameters)
+
+    return [
+        html.Details([
+            html.Summary('View input parameters'),
+            dbc.Table.from_dataframe(info_df,
+                                     striped=False,
+                                     bordered=True,
+                                     hover=True,
+                                     index=False,
+                                     size='sm',
+                                     float_format='{:4.3f}')
+        ])
+
+    ]
+
 
 
 @app.callback(Output('load', 'children'),
