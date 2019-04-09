@@ -59,8 +59,8 @@ layout = dbc.Container(
                             
                             """
                         ),
-                        html.A( dbc.Button("Learn More", color="secondary"),
-                                href='about'),
+                        # html.A( dbc.Button("Learn More", color="secondary"),
+                        #         href='about'),
                     ],
                     md=4,
                 ),
