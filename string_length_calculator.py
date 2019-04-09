@@ -746,113 +746,6 @@ def update_Voco(racking_model):
 #
 #
 
-#
-# # Update values when changing the module name.
-# @app.callback(Output('alpha_sc', 'value'), [Input('module_name', 'value')])
-# def update_alpha_sc(module_name):
-#     print(module_name)
-#     print('{:0.6f}'.format(pvtoolslib.cec_modules[module_name]['alpha_sc']))
-#     return 'heello'
-
-
-# @app.callback(Output('Bvoco', 'value'), [Input('module_name', 'value')])
-# def update_Voco(module_name):
-#     return str(pvtoolslib.sandia_modules[module_name]['Bvoco'])
-#
-#
-# @app.callback(Output('Mbvoc', 'value'), [Input('module_name', 'value')])
-# def update_Voco(module_name):
-#     return str(pvtoolslib.sandia_modules[module_name]['Mbvoc'])
-#
-#
-# @app.callback(Output('Cells_in_Series', 'value'),
-#               [Input('module_name', 'value')])
-# def update_Voco(module_name):
-#     return str(pvtoolslib.sandia_modules[module_name]['Cells_in_Series'])
-#
-#
-# @app.callback(Output('diode_ideality_factor', 'value'),
-#               [Input('module_name', 'value')])
-# def update_Voco(module_name):
-#     return str(pvtoolslib.sandia_modules[module_name]['N'])
-#
-#
-# @app.callback(Output('FD', 'value'), [Input('module_name', 'value')])
-# def update_Voco(module_name):
-#     return str(pvtoolslib.sandia_modules[module_name]['FD'])
-#
-# @app.callback(Output('A0', 'value'), [Input('module_name', 'value')])
-# def update(module_name):
-#     return str(pvtoolslib.sandia_modules[module_name]['A0'])
-#
-# @app.callback(Output('A1', 'value'), [Input('module_name', 'value')])
-# def update(module_name):
-#     return str(pvtoolslib.sandia_modules[module_name]['A1'])
-#
-# @app.callback(Output('A2', 'value'), [Input('module_name', 'value')])
-# def update(module_name):
-#     return str(pvtoolslib.sandia_modules[module_name]['A2'])
-#
-# @app.callback(Output('A3', 'value'), [Input('module_name', 'value')])
-# def update(module_name):
-#     return str(pvtoolslib.sandia_modules[module_name]['A3'])
-#
-# @app.callback(Output('A4', 'value'), [Input('module_name', 'value')])
-# def update(module_name):
-#     return str(pvtoolslib.sandia_modules[module_name]['A4'])
-#
-# @app.callback(Output('B0', 'value'), [Input('module_name', 'value')])
-# def update(module_name):
-#     return str(pvtoolslib.sandia_modules[module_name]['B0'])
-#
-# @app.callback(Output('B1', 'value'), [Input('module_name', 'value')])
-# def update(module_name):
-#     return str(pvtoolslib.sandia_modules[module_name]['B1'])
-#
-# @app.callback(Output('B2', 'value'), [Input('module_name', 'value')])
-# def update(module_name):
-#     return str(pvtoolslib.sandia_modules[module_name]['B2'])
-#
-# @app.callback(Output('B3', 'value'), [Input('module_name', 'value')])
-# def update(module_name):
-#     return str(pvtoolslib.sandia_modules[module_name]['B3'])
-#
-# @app.callback(Output('B4', 'value'), [Input('module_name', 'value')])
-# def update(module_name):
-#     return str(pvtoolslib.sandia_modules[module_name]['B4'])
-#
-# @app.callback(Output('B5', 'value'), [Input('module_name', 'value')])
-# def update(module_name):
-#     return str(pvtoolslib.sandia_modules[module_name]['B5'])
-# #
-# @app.callback(Output('a', 'value'), [Input('racking_model', 'value')])
-# def update_Voco(racking_model):
-#     return pvlib.pvsystem.TEMP_MODEL_PARAMS['sapm'][racking_model][0]
-#
-#
-# @app.callback(Output('b', 'value'), [Input('racking_model', 'value')])
-# def update_Voco(racking_model):
-#     return pvlib.pvsystem.TEMP_MODEL_PARAMS['sapm'][racking_model][1]
-#
-#
-# @app.callback(Output('DT', 'value'), [Input('racking_model', 'value')])
-# def update(racking_model):
-#     return pvlib.pvsystem.TEMP_MODEL_PARAMS['sapm'][racking_model][2]
-
-
-#
-# @app.callback(Output('download-data', 'href'),
-#     [Input('session-id', 'children')])
-# def update_download_link(session_id):
-#     # dff = filter_data(filter_value)
-#     # csv_string = dff.to_csv(index=False, encoding='utf-8')
-#     # csv_string = "data:text/csv;charset=utf-8," + urllib.quote(csv_string)
-#
-#     csv_string = 'hello'
-#     return csv_string
-#
-#
-
 
 @app.callback(Output('load', 'children'),
               [Input('submit-button', 'n_clicks')
@@ -867,38 +760,6 @@ def prepare_data(categ):
 
 
 
-#
-# @app.callback(Output('graphs', 'children'),
-#               [Input('submit-button', 'n_clicks')
-#                ],
-#               [State('lat', 'value'),
-#                 State('lon', 'value'),
-#                 State('module_parameter_input_type','active_tab'),
-#                 State('module_name','value'),
-#                 State('module_name_manual','value'),
-#                 State('alpha_sc','value'),
-#                 State('a_ref','value'),
-#                 # State('I_L_ref','value'),
-#                 # State('I_o_ref','value'),
-#                 # State('R_sh_ref','value'),
-#                 # State('R_s','value'),
-#                 # State('Adjust','value'),
-#                 # State('FD','value'),
-#                ]
-#               )
-# def run_simulation(n_clicks,lat,lon,module_parameter_input_type,module_name,
-#                    module_name_manual,
-#                     alpha_sc,
-#                    a_ref
-#                    # I_L_ref, I_o_ref, R_sh_ref, R_s, Adjust, FD):
-#     ):
-#     print('Run simulation!!')
-#     return [dbc.Label('All done')]
-
-
-
-
-#
 @app.callback(Output('graphs', 'children'),
               [Input('submit-button', 'n_clicks')
                ],
@@ -937,6 +798,48 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                  mount_type, surface_tilt, surface_azimuth,
                  axis_tilt, axis_azimuth, max_angle, backtrack, ground_coverate_ratio,
                  max_string_voltage):
+
+    """
+
+    Method for pressing 'calculate' button. Runs the main calculation and
+    formats results.
+
+
+    Parameters
+    ----------
+    n_clicks
+    lat
+    lon
+    module_parameter_input_type
+    module_name
+    module_name_manual
+    alpha_sc
+    a_ref
+    I_L_ref
+    I_o_ref
+    R_sh_ref
+    R_s
+    Adjust
+    FD
+    thermal_model_input_type
+    racking_model
+    a
+    b
+    DT
+    mount_type
+    surface_tilt
+    surface_azimuth
+    axis_tilt
+    axis_azimuth
+    max_angle
+    backtrack
+    ground_coverate_ratio
+    max_string_voltage
+
+    Returns
+    -------
+
+    """
 # def run_simulation(*argv):
 
     # print('Run simulation!!')
@@ -1087,10 +990,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     plot_min_index = np.max([0, max_pos - 1000])
     plot_max_index = np.min([len(df), max_pos + 1000])
 
-
-
-
-    print('making the layout')
+    # print('making the layout')
     return_layout = [
         html.P("""Using the weather data and the module parameters, the open 
         circuit voltage is simulated using the single diode model. Figure 1 
