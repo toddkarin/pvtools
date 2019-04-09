@@ -21,8 +21,7 @@ The pvtools package contains multiple different applications for photovoltaics. 
 
 # Install Notes
 
-In order to set up this application in Heroku, we started 
-with the [Heroku install instructions](https://dash.plot.ly/deployment) and then deleted the following lines from requirements.txt:
+In order to set up this application in Heroku, we followed the [Heroku install instructions](https://dash.plot.ly/deployment) but deleted the following lines from requirements.txt:
 ```
 functools32==3.2.3.post2
 futures==3.2.0
