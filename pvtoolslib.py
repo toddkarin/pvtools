@@ -15,15 +15,20 @@ import glob
 #     import pickle
 #
 
-version = '0.0.1'
+version = '0.0.2'
 
-sandia_modules = pvlib.pvsystem.retrieve_sam('SandiaMod')
+# sandia_modules = pvlib.pvsystem.retrieve_sam('SandiaMod')
+
+
+cec_modules = pvlib.pvsystem.retrieve_sam('CeCMod')
+cec_module_dropdown_list = []
+for m in list(cec_modules.keys()):
+    cec_module_dropdown_list.append(
+        {'label': m.replace('_', ' '), 'value': m})
+
 
 # Bucket for storing s3
 bucket = 'pvtools-nsrdb-pickle'
-
-
-
 
 
 
@@ -40,11 +45,6 @@ def get_s3_files():
         files.append(item.key)
 
     return files
-
-
-
-
-
 
 def build_filename_list(base_dir):
     """
@@ -92,10 +92,6 @@ def build_filename_list(base_dir):
     filedata.to_pickle('s3_filedata.pkl')
 
     return filedata
-
-
-
-# build_filename_list('')
 
 
 
@@ -304,63 +300,74 @@ def get_s3_weather_data(filename):
     weather.index = weather.index.tz_localize(
         pytz.FixedOffset(float(info['local_time_zone'] * 60)))
 
-    return weather, info
+    # Remove long vectors from info.
+    for f in list(info.keys()):
+        if type(info[f]) == type(np.array([0])):
+            del info[f]
 
-
-def load_compressed_nsrdb_file(filename):
-    """
-    Load compressed file
-
-    Example: load_compressed_nsrdb_file('1303017_41.57_-72.18.npz')
-
-
-    Parameters
-    ----------
-    filename
-
-    Returns
-    -------
-
-    """
-    # fileanme = '1303017_41.57_-72.18.npz'
-
-    info = {}
-
-    # Load into a dictionary.
-    with np.load(filename) as npfile:
-        # rewind the file
-        for var in list(npfile.keys()):
-            info[var] = npfile[var]
-
-    # Get rid of arrays for one-element long variables.
-    for f in info:
-        if len(info[f]) == 1:
-            info[f] = info[f][0]
-
-    weather = pd.DataFrame.from_dict({
-        'dni': info['dni'],
-        'ghi': info['ghi'],
-        'dhi': info['dhi'],
-        'temp_air': info['temp_air'],
-        'wind_speed': info['wind_speed'],
-    }
-    )
-
-    weather.index = pd.to_datetime(
-        pd.DataFrame.from_dict({
-            'year': info['year'],
-            'month': info['month'],
-            'day': info['day'],
-            'hour': info['hour'],
-            'minute': info['minute'],
-        })
-    )
-
-    weather.index = weather.index.tz_localize(
-        pytz.FixedOffset(float(info['local_time_zone'] * 60)))
 
     return weather, info
 
+#
+# def load_compressed_nsrdb_file(filename):
+#     """
+#     Load compressed file
+#
+#     Example: load_compressed_nsrdb_file('1303017_41.57_-72.18.npz')
+#
+#
+#     Parameters
+#     ----------
+#     filename
+#
+#     Returns
+#     -------
+#
+#     """
+#     # fileanme = '1303017_41.57_-72.18.npz'
+#
+#     info = {}
+#
+#     # Load into a dictionary.
+#     with np.load(filename) as npfile:
+#         # rewind the file
+#         for var in list(npfile.keys()):
+#             info[var] = npfile[var]
+#
+#     # Get rid of arrays for one-element long variables.
+#     for f in info:
+#         if len(info[f]) == 1:
+#             info[f] = info[f][0]
+#
+#     weather = pd.DataFrame.from_dict({
+#         'dni': info['dni'],
+#         'ghi': info['ghi'],
+#         'dhi': info['dhi'],
+#         'temp_air': info['temp_air'],
+#         'wind_speed': info['wind_speed'],
+#     }
+#     )
+#
+#     weather.index = pd.to_datetime(
+#         pd.DataFrame.from_dict({
+#             'year': info['year'],
+#             'month': info['month'],
+#             'day': info['day'],
+#             'hour': info['hour'],
+#             'minute': info['minute'],
+#         })
+#     )
+#
+#     weather.index = weather.index.tz_localize(
+#         pytz.FixedOffset(float(info['local_time_zone'] * 60)))
+#
+#
+#
+#     return weather, info
+
+
+
+# def get_cec_module_dropdown_list():
 
 
 
