@@ -115,9 +115,9 @@ layout = dbc.Container([
     
     """),
 
-    dcc.Markdown("""The string voltage calculator uses the open source 
-    [PVLIB](https://pvlib-python.readthedocs.io/en/latest/) 
-    library to perform the calculation. 
+    dcc.Markdown("""The string voltage calculator uses the open source [
+    PVLIB](https://pvlib-python.readthedocs.io/en/latest/) library to perform 
+    the calculation using the single diode model and the CEC parameterization. 
 
     """),
 
@@ -1033,17 +1033,17 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
 
     print(info)
 
-    csv_string_one_year = "data:text/csv;charset=utf-8," + \
-        urllib.parse.quote(
-            pd.DataFrame(info,index=[0]).to_csv(index=False,
-                                    encoding='utf-8',
-                                    float_format='%.3f')
-                ) + \
-        urllib.parse.quote(
-            df_temp[0:17520].to_csv(index=False,
-                                    encoding='utf-8',
-                                    float_format='%.3f')
-        )
+    # csv_string_one_year = "data:text/csv;charset=utf-8," + \
+    #     urllib.parse.quote(
+    #         pd.DataFrame(info,index=[0]).to_csv(index=False,
+    #                                 encoding='utf-8',
+    #                                 float_format='%.3f')
+    #             ) + \
+    #     urllib.parse.quote(
+    #         df_temp[0:17520].to_csv(index=False,
+    #                                 encoding='utf-8',
+    #                                 float_format='%.3f')
+    #     )
 
     colors = plotly.colors.DEFAULT_PLOTLY_COLORS
     plot_color = {}
@@ -1353,13 +1353,13 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                    href=summary_text_for_download,
                    target='_blank'),
         ]),
-        html.Div([
-            html.A('Download 1 year raw data as csv',
-               id='download-link',
-               download='raw_data.csv',
-               href=csv_string_one_year,
-               target='_blank'),
-            ]),
+        # html.Div([
+        #     html.A('Download 1 year raw data as csv',
+        #        id='download-link',
+        #        download='raw_data.csv',
+        #        href=csv_string_one_year,
+        #        target='_blank'),
+        #     ]),
     ]
 
     return return_layout
