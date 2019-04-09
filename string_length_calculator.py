@@ -1008,16 +1008,10 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     else:
         print('error getting racking type')
 
-
     max_string_voltage = float(max_string_voltage)
-
 
     df = vocmaxlib.simulate_system(weather, info,module_parameters,
                                    racking_parameters, thermal_model)
-
-
-
-
 
     voc_summary = vocmaxlib.make_voc_summary(df, module_parameters,
                                    max_string_voltage=max_string_voltage)
@@ -1037,8 +1031,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     df_temp['temp_cell'] = df_temp['temp_cell'].map(lambda x: '%2.1f' % x)
     df_temp['aoi'] = df_temp['aoi'].map(lambda x: '%3.0f' % x)
 
-    print(info)
-
+    # This works for creating a downloadable csv, but it takes an extra 7 seconds to transfer the data.
     # csv_string_one_year = "data:text/csv;charset=utf-8," + \
     #     urllib.parse.quote(
     #         pd.DataFrame(info,index=[0]).to_csv(index=False,
