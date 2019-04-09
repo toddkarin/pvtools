@@ -2,8 +2,11 @@
 """
 
 This script builds a Dash web application for finding maximum module Voc.
+Specifically, it builds the layout that is called by index.py
 
 Todd Karin
+
+toddkarin
 
 """
 
@@ -108,28 +111,33 @@ layout = dbc.Container([
     dcc.Markdown("""The simulation first acquires weather data from the 
     National Solar Radiation Database (NSRDB) [1]. The data was sampled 
     across the continental US at approximately a 0.125 degree grid. If a 
-    different weather data source is desired, it is necessary to use the 
-    associated python package [vocmax](https://github.com/toddkarin/vocmax). 
-    If the particular weather data point is not on the map, please contact us 
-    and we can provide it. 
+    different weather data source is desired, it is necessary to use the open 
+    source associated python package [vocmax]( 
+    https://github.com/toddkarin/vocmax), which performs the same calculation 
+    as this web tool. If the particular weather data point is not on the map, 
+    please contact us and we will try to provide it. 
     
     """),
 
-    dcc.Markdown("""The string voltage calculator uses the open source [
+    dcc.Markdown("""The string voltage calculator uses the open source [ 
     PVLIB](https://pvlib-python.readthedocs.io/en/latest/) library to perform 
-    the calculation using the single diode model and the CEC parameterization. 
+    the calculation using the single diode model and the CEC 
+    parameterization. Module parameters are either taken from a standard 
+    database or entered manually. The calculation conservatively assumes that 
+    all diffuse irradiance is used and that there are no reflection losses 
+    from the top cell. These two assumptions cause a small increase in the 
+    Voc and make the simulation more conservative. Other specific details of 
+    the calculations are explained in [vocmax]( 
+    https://github.com/toddkarin/vocmax). 
 
     """),
 
-    html.P("""This tool provides information for methods 690.7(A)(1) and 
+    html.P("""This tool provides standard values for methods 690.7(A)(1) and 
     690.7(A)(3). For method 690.7(A)(1), The lowest expected ambient 
     temperature is calculated by finding the minimum temperature during 
-    daylight hours, defined as GHI>150 W/m^2. 
-
-    """),
-    html.P("""For method 690.7(A)(3), a full PVLIB model is run using weather 
-    data from the selected location and module parameters. Module parameters 
-    are either taken from database values or entered manually.
+    daylight hours, defined as GHI>150 W/m^2. For method 690.7(A)(3), the full 
+    PVLIB model is run using weather data from the selected location and 
+    module parameters.
 
     """),
 
@@ -497,9 +505,7 @@ layout = dbc.Container([
         html.Summary(
             'Can I get the source code for this website?'),
         html.Div([
-            html.Label(["Of Course! Please visit us on github: ",
-                        html.A("https://github.com/toddkarin/pvtools",
-                               href="https://github.com/toddkarin/pvtools")])
+            dcc.Markdown("Of Course! Please visit us on [github](https://github.com/toddkarin/pvtools)")
         ],
             style={'marginLeft': 50})
     ]),
@@ -1221,12 +1227,11 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                 )
             }
         ),
-        # html.Div([
-        #     html.P("""Figure 1. Histogram of Voc values over the simultaion
-        #     time.
-        #
-        #     """)],
-        #     style={'align':'center'}),
+        html.P("""Figure 2 shows a histogram of the air and cell temperature. 
+        A spike at 0 C is sometimes observed and explained below under 
+        frequently asked questions. 
+
+        """),
         dcc.Graph(
             id='temperature-histogram',
             figure={
