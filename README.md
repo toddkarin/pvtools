@@ -5,11 +5,18 @@ This page is the github repo for the pvtools Heroku app built in plotly dash.
 # Applications
 
 The pvtools package contains multiple different applications for photovoltaics. These include:
-- **String Voltage Calculator**. Method for calculating the maximum string voltage for a photovoltaic system. 
+- **String Length Calculator**. Method for calculating the maximum allowable string length for a photovoltaic system. 
+
+# Files
+
+- **index.py** - Homepage for pvtools website.
+- **string_length_calculator.py** - Page for calculating string length.
+- ...
+
 
 # Todo
 
-- Add 
+- Document! 
 - Check AWS bucket region to minimize latency.
 
 # Install Notes
