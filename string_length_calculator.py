@@ -27,7 +27,7 @@ import nsrdbtools
 import pandas as pd
 # import uuid
 # import os
-# import flask
+import flask
 # import json
 # import time
 import datetime
@@ -143,7 +143,7 @@ layout = dbc.Container([
 
 
     # html.H2('Simulation Input'),
-    html.H2('Weather'),
+    html.H2('Step 1. Weather'),
     dbc.Card([
         dbc.CardHeader('Choose Location'),
         dbc.CardBody([
@@ -160,34 +160,9 @@ layout = dbc.Container([
                     html.P(''),
                     html.Div([
                     dbc.Button(id='get-weather', n_clicks=0,
-                                           children='Show On Map'),
+                                           children='Get Weather Data'),
                         ]),
-                    # dbc.Label(id='temperature-help'),
-                    # html.Table([
-                    #     html.Tr([
-                    #         html.Td([
-                    #             html.P('Latitude'),
-                    #             dbc.Input(id='lat', value='37.88', type='text')
-                    #         ]),
-                    #         html.Td([
-                    #             html.P('Longitude'),
-                    #             dbc.Input(id='lon', value='-122.25', type='text')
-                    #         ]),
-                    #         html.Td([
-                    #             html.P('Get Data'),
-                    #             dbc.Button(id='get-weather', n_clicks=0,
-                    #                        children='Show Map')
-                    #         ])
-                    #     ])
-                    # ]),
-                    # html.Label('Latitude (degrees)'),
-                    # dbc.Input(id='lat', value=37.88, type='number'),
-                    # html.Label('Longitude (degrees)'),
-                    # dbc.Input(id='lon', value=-122.25, type='number'),
-                    # html.Div(
-                    #     'Press button to get closest weather data to target point'),
-                    # dbc.Button(id='get-weather', n_clicks=0,
-                    #             children='Get Weather Data'),
+                    html.Div(id='weather_data_download'),
 
                 ],md=4),
                 dbc.Col([
@@ -370,20 +345,20 @@ layout = dbc.Container([
                                 at low wind speeds and high solar irradiance 
                                 
                                 """),
-                                dbc.Input(id='a', value=-3.47, type='number',
+                                dbc.Input(id='a', value='-3.47', type='text',
                                           style={'max-width': 200}),
                                 dbc.Label("""b: Empirically-determined coefficient 
                                 establishing the rate at which module temperature 
                                 drops as wind speed increases (s/m) 
                                 
                                 """),
-                                dbc.Input(id='b', value=-0.0594, type='number',
+                                dbc.Input(id='b', value='-0.0594', type='text',
                                           style={'max-width': 200}),
                                 dbc.Label("""DT: temperature difference between cell 
                                 and module at reference irradiance (C) 
                                 
                                 """),
-                                dbc.Input(id='DT', value=3, type='number',
+                                dbc.Input(id='DT', value='3', type='text',
                                           style={'max-width': 200})
                              ]
                         )
@@ -482,8 +457,8 @@ layout = dbc.Container([
             """),
             dbc.Label('Max string voltage (V)'),
             dbc.Input(id='max_string_voltage',
-                      value=1500,
-                      type='number',
+                      value='1500',
+                      type='text',
                       style={'max-width': 200}),
             dbc.FormText('Maximum string voltage for calculating string length'),
             ])
@@ -605,6 +580,20 @@ layout = dbc.Container([
 
 # Callback for finding closest lat/lon in database.
 @app.callback(
+    Output('weather_data_download', 'children'),
+    [Input('lat', 'value'),
+     Input('lon', 'value')]
+)
+def update_output_div( lat, lon):
+    return html.A('Download weather data',
+        href='/download_weather/get?lat={}&lon={}'.format(lat, lon)
+                                        )
+
+    # return str(n_clicks)
+
+
+# Callback for finding closest lat/lon in database.
+@app.callback(
     Output('closest-message', 'children'),
     [Input('get-weather', 'n_clicks')],
     [State('lat', 'value'),
@@ -716,8 +705,12 @@ def update_map_callback(n_clicks, lat, lon):
                 borderwidth=2
             )
         )}
+
+
     return map_figure, dict(scrollZoom = True)
 
+
+#
 
 
 # @app.callback([Output('alpha_sc', 'value')
@@ -740,9 +733,9 @@ def update_map_callback(n_clicks, lat, lon):
               [Input('racking_model', 'value')])
 def update_Voco(racking_model):
     # print('Racking model changed')
-    return pvlib.pvsystem.TEMP_MODEL_PARAMS['sapm'][racking_model][0], \
-        pvlib.pvsystem.TEMP_MODEL_PARAMS['sapm'][racking_model][1], \
-        pvlib.pvsystem.TEMP_MODEL_PARAMS['sapm'][racking_model][2]
+    return str(pvlib.pvsystem.TEMP_MODEL_PARAMS['sapm'][racking_model][0]), \
+        str(pvlib.pvsystem.TEMP_MODEL_PARAMS['sapm'][racking_model][1]), \
+        str(pvlib.pvsystem.TEMP_MODEL_PARAMS['sapm'][racking_model][2])
 
 #
 # @app.callback(
@@ -845,9 +838,10 @@ def make_iv_summary_layout(module_parameters):
                 ),
             ],md=6),
             dbc.Col([
-                dcc.Markdown("""Predicted module parameters from CEC model are shown 
-                    in the table below. It is highly recommended to cross-check these 
-                    values with the module datasheet provided by the manufacturer. 
+                dcc.Markdown("""Predicted module parameters from CEC model 
+                are shown in the table below. It is highly recommended to 
+                cross-check these values with the module datasheet provided 
+                by the manufacturer. 
         
                     """),
                 dbc.Table.from_dataframe(extra_parameters,
@@ -860,69 +854,6 @@ def make_iv_summary_layout(module_parameters):
             ],md=6)
         ])
     ]
-    # return [
-    #     html.P('I-V curves at 25 C.'),
-    #     dcc.Graph(
-    #         figure={
-    #             'data': [
-    #                 {'x': s['v'], 'y': s['i'], 'type': 'line',
-    #                  'name': s['legend']} for s in iv_curve
-    #             ],
-    #             'layout': go.Layout(
-    #                 # title=go.layout.Title(
-    #                 #     text='I-V curves at 25 C.',
-    #                 #     xref='paper',
-    #                 #     x=0
-    #                 # ),
-    #                 autosize=True,
-    #                 xaxis={'title': 'Voltage (V)'},
-    #                 yaxis={'title': 'Current (A)'},
-    #                 margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
-    #                 hovermode='closest',
-    #                 # annotations=[
-    #                 #     dict(
-    #                 #         dict(
-    #                 #             x=voc_summary['v_oc'][s],
-    #                 #             y=voc_hist_y[np.argmin(
-    #                 #                 np.abs(
-    #                 #                     voc_summary['v_oc'][s] - voc_hist_x))],
-    #                 #             xref='x',
-    #                 #             yref='y',
-    #                 #             xanchor='center',
-    #                 #             text=s,
-    #                 #             hovertext=voc_summary['long_note'][s],
-    #                 #             textangle=0,
-    #                 #             font=dict(
-    #                 #                 color=plot_color[s]
-    #                 #             ),
-    #                 #             arrowcolor=plot_color[s],
-    #                 #             # bordercolor=plot_color[s],
-    #                 #             showarrow=True,
-    #                 #             align='left',
-    #                 #             standoff=2,
-    #                 #             arrowhead=4,
-    #                 #             ax=0,
-    #                 #             ay=-40
-    #                 #         ),
-    #                 #         align='left'
-    #                 #     )
-    #                 #     for s in list(voc_summary.index)]
-    #             )
-    #         }
-    #     ),
-    #     dcc.Markdown("""Predicted module parameters from CEC model are shown
-    #         in the table below. It is highly recommended to cross-check these
-    #         values with the module datasheet provided by the manufacturer.
-    #
-    #         """),
-    #     dbc.Table.from_dataframe(extra_parameters,
-    #                              striped=False,
-    #                              bordered=True,
-    #                              hover=True,
-    #                              index=False,
-    #                              size='sm')
-    # ]
-
 
 @app.callback(Output('module_name_iv', 'children'),
               [Input('module_name', 'value')
@@ -1040,6 +971,20 @@ def prepare_data(module_name_manual,
     #
 
 
+#
+#
+# def process_simulation_input(lat, lon,  module_parameter_input_type, module_name, module_name_manual,
+#                  alpha_sc, a_ref, I_L_ref, I_o_ref, R_sh_ref, R_s, Adjust, FD,
+#                  thermal_model_input_type, racking_model, a, b, DT,
+#                  mount_type, surface_tilt, surface_azimuth,
+#                  axis_tilt, axis_azimuth, max_angle, backtrack, ground_coverate_ratio,
+#                  max_string_voltage):
+#
+#
+#
+#     lat = float(lat)
+#     lon = float(lon)
+#     return lat,lon, module_parameters, thermal_model, racking_parameters, max_string_voltage
 
 
 
@@ -1139,6 +1084,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
 # def run_simulation(*argv):
 
 
+
     if n_clicks<1:
         # print('Not running simulation.')
         return []
@@ -1151,12 +1097,47 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                                                          filedata)
 
 
-    # print('Getting weather data...')
-    weather, info = pvtoolslib.get_s3_weather_data(
-        filedata_closest['filename'].iloc[0])
+    all_params = {
+        'lat': lat,
+        'lon': lon,
+        'module_parameter_input_type': module_parameter_input_type,
+        'module_name': module_name,
+        'module_name_manual': module_name_manual,
+        'alpha_sc': alpha_sc,
+        'a_ref': a_ref,
+        'I_L_ref': I_L_ref,
+        'I_o_ref': I_o_ref,
+        'R_sh_ref': R_sh_ref,
+        'R_s': R_s,
+        'Adjust': Adjust,
+        'FD': FD,
+        'thermal_model_input_type': thermal_model_input_type,
+        'racking_model': racking_model,
+        'a':a,
+        'b': b,
+        'DT': DT,
+        'mount_type': mount_type,
+        'surface_tilt': surface_tilt,
+        'surface_azimuth': surface_azimuth,
+        'axis_tilt': axis_tilt,
+        'axis_azimuth': axis_azimuth,
+        'max_angle': max_angle,
+        'backtrack': str(backtrack),
+        'ground_coverage_ratio': ground_coverate_ratio,
+        'max_string_voltage': max_string_voltage
+    }
 
-    print(pd.Series(info))
+    request_str = '?'
+    for p in all_params:
+        request_str = request_str  + p + '=' + str(all_params[p]) + '&'
 
+    request_str = request_str[0:-1]
+    request_str = request_str.replace(' ','_')
+    # print(request_str)
+
+
+
+    # print('/'.join(all_params))
 
     if module_parameter_input_type=='lookup':
         module_parameters = pvtoolslib.cec_modules[module_name].to_dict()
@@ -1209,6 +1190,15 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
 
     max_string_voltage = float(max_string_voltage)
 
+
+    # print('Getting weather data...')
+    weather, info = pvtoolslib.get_s3_weather_data(
+        filedata_closest['filename'].iloc[0])
+
+    print(pd.Series(info))
+
+
+
     df = vocmaxlib.simulate_system(weather, info,module_parameters,
                                    racking_parameters, thermal_model)
 
@@ -1231,6 +1221,8 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     df_temp['aoi'] = df_temp['aoi'].map(lambda x: '%3.0f' % x)
 
     # This works for creating a downloadable csv, but it takes an extra 7 seconds to transfer the data.
+    # sim_params_embedded =
+
     # csv_string_one_year = "data:text/csv;charset=utf-8," + \
     #     urllib.parse.quote(
     #         pd.DataFrame(info,index=[0]).to_csv(index=False,
@@ -1547,634 +1539,189 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                    href=summary_text_for_download,
                    target='_blank'),
         ]),
-        # html.Div([
-        #     html.A('Download 1 year raw data as csv',
-        #        id='download-link',
-        #        download='raw_data.csv',
-        #        href=csv_string_one_year,
-        #        target='_blank'),
-        #     ]),
+        html.Div([
+            html.A('Download full simulation data as csv',
+               id='download-link',
+               download='raw_data.csv',
+               href='/dash/download_simulation_data' + request_str,
+               target='_blank'),
+            ]),
     ]
 
     return return_layout
 
-    # system_parameters = {
-    #     'racking_model': {'a': a, 'b': b, 'deltaT': DT},
-    #     # 'racking_model': racking_model,
-    #     'surface_tilt': float(surface_tilt),
-    #     'surface_azimuth': float(surface_azimuth),
-    #     'mount_type': mount_type,
-    #     'axis_tilt': float(axis_tilt),
-    #     'axis_azimuth': float(axis_azimuth),
-    #     'max_angle': float(max_angle),
-    #     'backtrack': float(backtrack),
-    #     'ground_coverage_ratio': float(ground_coverage_ratio)}
-    #
-    # module_parameters = pvtoolslib.cec_modules[module_name]
-    #
-    # # Overwrite provided module parameters.
-    # module_parameters['Voco'] = float(Voco)
-    # module_parameters['Bvoco'] = float(Bvoco)
-    # module_parameters['Mbvoc'] = float(Mbvoc)
-    # module_parameters['Cells_in_Series'] = float(Cells_in_Series)
-    # module_parameters['diode_ideality_factor'] = float(diode_ideality_factor)
-    # module_parameters['FD'] = float(FD)
-    #
-    # module_parameters['A0'] = float(A0)
-    # module_parameters['A1'] = float(A1)
-    # module_parameters['A2'] = float(A2)
-    # module_parameters['A3'] = float(A3)
-    # module_parameters['A4'] = float(A4)
-    # module_parameters['B0'] = float(B0)
-    # module_parameters['B1'] = float(B1)
-    # module_parameters['B2'] = float(B2)
-    # module_parameters['B3'] = float(B3)
-    # module_parameters['B4'] = float(B4)
-    # module_parameters['B5'] = float(B5)
-    #
-    # filedata = pvtoolslib.get_s3_filename_df()
-    # filedata_closest = nsrdbtools.find_closest_datafiles(float(lat), float(lon),
-    #                                                      filedata)
-    #
-    #
-    #
+
+@app.server.route('/dash/download_simulation_data')
+def download_simulation_data():
+    print('Values found:')
+    # value = flask.request.args.get('lat')
+    p = flask.request.args
+
+
+    print('Get weather data')
+    filedata = pvtoolslib.get_s3_filename_df()
+    filedata_closest = nsrdbtools.find_closest_datafiles(float(p['lat']),
+                                                         float(p['lon']),
+                                                         filedata)
+
+    # print('/'.join(all_params))
+    print(p)
+
+
+    if p['module_parameter_input_type']=='lookup':
+        module_parameters = pvtoolslib.cec_modules[p['module_name']].to_dict()
+        module_parameters['FD'] = 1
+        module_parameters['name'] = p['module_name']
+        module_parameters['aoi_model'] = 'no_loss'
+    elif p['module_parameter_input_type']=='manual':
+        module_parameters = {
+            'name': p['module_name_manual'],
+            'alpha_sc': float(p['alpha_sc']),
+            'a_ref': float(p['a_ref']),
+            'I_L_ref': float(p['I_L_ref']),
+            'I_o_ref': float(p['I_o_ref']),
+            'R_sh_ref': float(p['R_sh_ref']),
+            'R_s': float(p['R_s']),
+            'Adjust': float(p['Adjust']),
+            'FD': float(p['FD'])
+        }
+    else:
+        print('input type not understood.')
+
+    if p['thermal_model_input_type']=='lookup':
+        thermal_model = p['racking_model']
+        thermal_model_dict = {'thermal_model': thermal_model}
+    elif p['thermal_model_input_type']=='manual':
+        thermal_model = {
+            'a':float(p['a']),
+            'b':float(p['b']),
+            'deltaT':float(p['DT'])
+        }
+        thermal_model_dict = thermal_model
+    else:
+        print('Racking model not understood')
+
+    if p['mount_type']=='fixed_tilt':
+        racking_parameters = {
+            'racking_type': 'fixed_tilt',
+            'surface_tilt': float(p['surface_tilt']),
+            'surface_azimuth': float(p['surface_azimuth'])
+        }
+    elif p['mount_type']=='single_axis_tracker':
+        racking_parameters = {
+            'racking_type': 'single_axis',
+            'axis_tilt': float(p['axis_tilt']),
+            'axis_azimuth': float(p['axis_azimuth']),
+            'max_angle': float(p['max_angle']),
+            'backtrack': p['backtrack'],
+            'gcr': float(p['ground_coverate_ratio)'])
+        }
+    else:
+        print('error getting racking type')
+
+    max_string_voltage = float(p['max_string_voltage'])
+
+
     # print('Getting weather data...')
-    # weather, info = pvtoolslib.get_s3_weather_data(filedata_closest['filename'].iloc[0])
-    #
-    # # print(info.keys())
-    # print('Simulating system...')
-    # (df, mc) = vocmaxlib.calculate_max_voc(weather, info,
-    #                                        module_parameters=module_parameters,
-    #                                        system_parameters=system_parameters)
-    #
-    #
-    # info_df = pd.DataFrame(
-    #     {'Weather data source': info['Source'],
-    #      'Location ID': info['Location_ID'],
-    #      'Latitude': info['Latitude'],
-    #      'Longitude': info['Longitude'],
-    #      'Elevation': info['Elevation'],
-    #      'Time Zone': info['local_time_zone'],
-    #      'Data time step (hours)': info['interval_in_hours'],
-    #      'Data time length (years)': info['timedelta_in_years'],
-    #      'PVTOOLS Version': pvtoolslib.version,
-    #      'v_oc units':'Volts',
-    #      'temp_air units': 'C',
-    #      'wind_speed units': 'm/s',
-    #      'dni units': 'W/m^2',
-    #      'dhi units': 'W/m^2',
-    #      'ghi units': 'W/m^2',
-    #      },
-    #     index=[0]
-    # )
-    # print('Generating files for downloading...')
-    # df_temp = df.copy()
-    # df_temp['wind_speed'] = df_temp['wind_speed'].map(lambda x: '%2.1f' % x)
-    # df_temp['v_oc'] = df_temp['v_oc'].map(lambda x: '%3.2f' % x)
-    # df_temp['temp_cell'] = df_temp['temp_cell'].map(lambda x: '%2.1f' % x)
-    #
-    # # csv_string = "data:text/csv;charset=utf-8," + urllib.parse.quote(
-    # #     df_temp.to_csv(index=False, encoding='utf-8',float_format='%.3f')
-    # # )
-    #
-    # csv_string = "data:text/csv;charset=utf-8,"
-    # csv_string_one_year = "data:text/csv;charset=utf-8," + \
-    #     urllib.parse.quote(
-    #         info_df.to_csv(index=False,
-    #                                 encoding='utf-8',
-    #                                 float_format='%.3f')
-    #     ) + \
-    #     urllib.parse.quote(
-    #         df_temp[0:17520].to_csv(index=False,
-    #                                 encoding='utf-8',
-    #                                 float_format='%.3f')
-    #     )
-    #
-    #
-    #
-    # print('done')
-    #
-    # y, c = np.histogram(df['v_oc'],
-    #                     bins=np.linspace(df['v_oc'].max() * 0.75,
-    #                                      df['v_oc'].max() + 1, 500))
-    #
-    # years = list(set(weather.index.year))
-    # yearly_min_temp = []
-    # yearly_min_daytime_temp = []
-    # for j in years:
-    #     yearly_min_temp.append(
-    #         weather[weather.index.year == j]['temp_air'].min())
-    #     yearly_min_daytime_temp.append(
-    #         weather[weather.index.year == j]['temp_air'][
-    #             weather[weather.index.year == j]['ghi'] > 150].min()
-    #     )
-    # mean_yearly_min_ambient_temp = np.mean(yearly_min_temp)
-    # mean_yearly_min_daytime_ambient_temp = np.mean(yearly_min_daytime_temp)
-    #
-    # # min_daytime_temp = df['temp_air'][df['ghi']>150].min()
-    #
-    # voc_1sun_min_temp = mc.system.sapm(1, mean_yearly_min_ambient_temp)['v_oc']
-    # voc_1sun_min_daytime_temp = \
-    # mc.system.sapm(1, mean_yearly_min_daytime_ambient_temp)['v_oc']
-    #
-    # voc_dni_cell_temp = \
-    # mc.system.sapm((df['dni'] + df['dhi']) / 1000, df['temp_cell'])[
-    #     'v_oc'].max()
-    # voc_P99p5 = np.percentile(
-    #     df['v_oc'][np.logical_not(np.isnan(df['v_oc']))],
-    #     99.5)
-    # voc_P99 = np.percentile(df['v_oc'][np.logical_not(np.isnan(df['v_oc']))],
-    #                         99)
-    #
-    # # results_dict = {
-    # #     'Source': info['source'],
-    # #     'Location ID': info['location_id'],
-    # #     'Elevation': info['elevation'],
-    # #     'Latitude': info['lat'],
-    # #     'Longitude': info['lon'],
-    # #     # 'DHI Units': info['DHI Units'][0],
-    # #     # 'DNI Units': info['DNI Units'][0],
-    # #     # 'GHI Units': info['GHI Units'][0],
-    # #     # 'V_oc Units': 'V',
-    # #     # 'Wind Speed Units': info['Wind Speed'][0],
-    # #     'interval_in_hours': info['interval_in_hours'],
-    # #     'timedelta_in_years': info['timedelta_in_years'],
-    # #     'NSRDB Version': info['version'],
-    # #     'PVLIB Version': pvlib._version.get_versions()['version'],
-    # #     'PVTools Version': '0.0.1',
-    # #     'Date Created': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # # }
-    # # info_df = pd.DataFrame(results_dict, index=[0])
-    #
-    # summary = [
-    #     'Latitude: {:0.4f}'.format(info['Latitude']),
-    #     'Longitude: {:0.4f}'.format(info['Longitude']),
-    #     'Maximum Design String Voltage: {:0.2f} V'.format(max_string_voltage),
-    #     'Historical Max Voc: {:0.3f} V'.format(df.v_oc.max()),
-    #     'P99.5 Voc: {:0.3f} V'.format(voc_P99p5),
-    #     'P99.5 Max String length: {:0.0f} modules'.format(
-    #         np.floor(max_string_voltage / voc_P99p5)),
-    #     'Traditional max Voc: {:0.3f} V'.format(voc_1sun_min_temp),
-    #     'Traditional Max String length: {:0.0f} modules'.format(
-    #         np.floor(max_string_voltage / voc_1sun_min_temp)),
-    #     'Yearly mean minimum ambient temperature: {:0.3f} C'.format(mean_yearly_min_ambient_temp),
-    #     'Weather data source: {}'.format(info['Source']),
-    #     'Location ID: {}'.format(info['Location_ID']),
-    #     'Weather data start date: {}'.format(
-    #         df.index[0].strftime("%Y-%m-%d %H:%M:%S")),
-    #     'Weather data end date: {}'.format(
-    #         df.index[-1].strftime("%Y-%m-%d %H:%M:%S")),
-    #
-    # ]
-    #
-    # # summary.append('Sandia Module parameters')
-    # # for p in list(module_parameters.keys()):
-    # #     summary.append( p + ': {:0.3f}'.format(module_parameters[p]))
-    #
-    #
-    #           # + \
-    #           # 'Location ID, {}\n'.format(info['location_id']) + \
-    #           # 'Weather data start date, {}\n'.format(
-    #           #     df.index[0].strftime("%Y-%m-%d %H:%M:%S")) + \
-    #           # 'Weather data end date, {}\n'.format(
-    #           #     df.index[-1].strftime("%Y-%m-%d %H:%M:%S")) + \
-    #           # 'Latitude, {:0.4f}\n'.format(info.Latitude[0]) + \
-    #           # 'Longitude, {:0.4f}\n'.format(info.Longitude[0]) + \
-    #           # 'P99 Voc (V), {:0.3f}\n'.format(np.percentile(df.v_oc, 99)) + \
-    #           # 'Max Historical Voc (V), {:0.3f}\n'.format(df.v_oc.max()) + \
-    #           # 'P01 Air Temp (C), {:0.2f}\n'.format(
-    #           #     np.percentile(df['temp_air'], 1)) + \
-    #           # 'Min Historical Air Temp (C), {:0.3f}\n'.format(
-    #           #     df['temp_air'].min()) + \
-    #           # 'P01 Cell Temp (C), {:0.2f}\n'.format(
-    #           #     np.percentile(df['temp_cell'], 1)) + \
-    #           # 'Min Historical Cell Temp (C), {:0.2f}\n'.format(
-    #           #     df['temp_cell'].min())
-    #
-    # # print(info_df)
-    #
-    # # # Make a directory for saving session files.
-    # # if not os.path.isdir(os.path.join('downloads',session_id)):
-    # #     os.mkdir(os.path.join('downloads',session_id))
-    # # save_filename = os.path.join('downloads',session_id,'maxvoc_data.csv')
-    # # info_filename = os.path.join('downloads',session_id,'maxvoc_info.csv')
-    # # temp_filename = os.path.join('downloads', session_id, 'maxvoc_temp.pkl')
-    # # print('Saving data as ' + str(save_filename) + '...')
-    # # with open(save_filename,'w') as f:
-    # #     f.write(info_df.to_csv(index=False))
-    # #     if len(generate_datafile)>0:
-    # #         f.write(df.to_csv(float_format='%.2f'))
-    # #
-    # # with open(info_filename,'w') as f:
-    # #     # f.write('hello')
-    # #     # f.write(info_df.to_csv(index=False))
-    # #     f.write(summary)
-    # # print('done')
-    #
-    # # Make histograms
-    # def scale_to_hours_per_year(y):
-    #     return y / info['timedelta_in_years'] * info['interval_in_hours']
-    #
-    # y_scale = scale_to_hours_per_year(y)
-    # voc_hist_y = y_scale[1:]
-    # voc_hist_x = c[1:-1]
-    #
-    # temp_bins = np.arange(
-    #     -4 + np.floor(np.min([df['temp_cell'].min(), df['temp_air'].min()])),
-    #     1 + np.floor(np.max([df['temp_cell'].max(), df['temp_air'].max()]))
-    # )
-    #
-    # temp_cell_hist, temp_cell_hist_bin = np.histogram(df['temp_cell'],
-    #                                                   bins=temp_bins)
-    # temp_cell_hist = scale_to_hours_per_year(temp_cell_hist)
-    #
-    # temp_air_hist, temp_air_hist_bin = np.histogram(df['temp_air'],
-    #                                                 bins=temp_bins)
-    # temp_air_hist = scale_to_hours_per_year(temp_air_hist)
-    #
-    # temp_cell_hist_x = temp_cell_hist_bin[1:-1]
-    # temp_air_hist_x = temp_air_hist[1:-1]
-    # temp_cell_hist_y = temp_cell_hist[1:]
-    # temp_air_hist_y = temp_air_hist[1:]
-    #
-    # max_pos = np.argmax(np.array(df.v_oc))
-    # plot_min_index = np.max([0, max_pos - 1500])
-    # plot_max_index = np.min([len(df.v_oc), max_pos + 1500])
-    #
-    # colors = plotly.colors.DEFAULT_PLOTLY_COLORS
-    #
-    # voc_poi = pd.DataFrame.from_dict(
-    #     {
-    #         # 'P99':
-    #         #     ['P99',
-    #         #      'P99 Voc: {:.3f} V<br>'
-    #         #      'Maximum String length: {:.0f}<br>'.format(
-    #         #          voc_P99,
-    #         #          np.floor(max_string_voltage / voc_P99)
-    #         #      ),
-    #         #      voc_P99,
-    #         #      'rgb(0, 0, 0)'
-    #         #      ],
-    #         'P99.5':
-    #             ['P99.5',
-    #              'P99.5 Voc: {:.3f} V<br>'
-    #              'Maximum String length: {:.0f}<br>'
-    #              'Recommended 690.7(A)(3) value'.format(
-    #                  voc_P99p5,
-    #                  np.floor(max_string_voltage / voc_P99p5)
-    #              ),
-    #              voc_P99p5,
-    #              colors[2]
-    #              ],
-    #         'Max':
-    #             ['Hist',
-    #              'Historical Maximum Voc: {:.3f} V<br>'
-    #              'Maximum String length: {:.0f}<br>'
-    #              'Conservative 690.7(A)(3) value'.format(
-    #                  df.v_oc.max(),
-    #                  np.floor(max_string_voltage / df.v_oc.max())
-    #              ),
-    #              df.v_oc.max(),
-    #              colors[3]
-    #              ],
-    #         'Trad':
-    #             ['Trad',
-    #              'Traditional Maximum Voc: {:.3f} V<br>'
-    #              'Maximum String length: {:.0f}<br>'
-    #              'Calculated using 1 sun and mean yearly min ambient temp of {:.1f} C<br>Conservative 690.7(A)(1) value'.format(
-    #                  voc_1sun_min_temp,
-    #                  np.floor(max_string_voltage / voc_1sun_min_temp),
-    #                  mean_yearly_min_ambient_temp,
-    #              ),
-    #              voc_1sun_min_temp,
-    #              colors[4]
-    #              ],
-    #         'Tradday':
-    #             ['Day',
-    #              'Traditional Maximum Daytime Voc: {:.3f} V<br>'
-    #              'Maximum String length: {:.0f}<br>'
-    #              'Calculated using 1 sun and mean yearly min daytime (GHI>150) temp of {:.1f} C<br>'
-    #              'Recommended 690.7(A)(1) value'.format(
-    #                  voc_1sun_min_daytime_temp,
-    #                  np.floor(max_string_voltage / voc_1sun_min_daytime_temp),
-    #                  mean_yearly_min_daytime_ambient_temp),
-    #              voc_1sun_min_daytime_temp,
-    #              colors[5]
-    #              ],
-    #         'dni':
-    #             ['Normal',
-    #              'Max Voc using DNI+DHI (simple calculation): {:.3f} V<br>'
-    #              'Maximum String length: {:.0f}<br>'.format(
-    #                  voc_dni_cell_temp,
-    #                  np.floor(max_string_voltage / voc_dni_cell_temp)),
-    #              voc_dni_cell_temp,
-    #              colors[6]
-    #              ],
-    #
-    #     },
-    #     orient='index',
-    #     columns=['short_label', 'hover_label', 'value', 'color']
-    # ).transpose()
-    #
-    # temperature_poi = pd.DataFrame.from_dict(
-    #     {
-    #         'P1 Air':
-    #             ['P1',
-    #              '1 Percentile Air Temperature: {:.1f} C'.format(
-    #                  np.percentile(df['temp_air'], 1)),
-    #              np.percentile(df['temp_air'], 1),
-    #              'rgb(0, 0, 0)'
-    #              ],
-    #         # 'P4 Air':
-    #         #  ['P4',
-    #         #   'P4 Air Temperature: {:.1f} C'.format(np.percentile(df['temp_air'], 4)),
-    #         #   np.percentile(df['temp_air'], 4),
-    #         #   'rgb(0, 0, 0)'
-    #         #   ],
-    #         'Hist':
-    #             ['HA',
-    #              'Historical Minimum Ambient Temperature: {:.1f} C'
-    #              '<br>Conservative 690.7(A)(1) value'.format(
-    #                  df['temp_air'].min()),
-    #              df['temp_air'].min(),
-    #              'rgb(0, 0, 0)'
-    #              ],
-    #         'Hist2':
-    #             ['Day',
-    #              'Historical Minimum Daytime Ambient Temperature: {:.1f} C'
-    #              '<br>Recommended 690.7(A)(1) value'.format(
-    #                  df['temp_air'][df['ghi'] > 150].min()),
-    #              df['temp_air'][df['ghi'] > 150].min(),
-    #              'rgb(0, 0, 0)'
-    #              ],
-    #         # 'Hist2':
-    #         #     ['HC',
-    #         #      'Historical Minimum Cell Temperature: {:.1f} C'.format(
-    #         #      df['temp_cell'].min()),
-    #         #      df['temp_cell'].min(),
-    #         #      'rgb(0, 0, 0)'
-    #         #      ],
-    #         'TM':
-    #             ['Max',
-    #              'Cell Temperature when max Voc was reached: {:.1f} C'.format(
-    #                  df['temp_cell'][max_pos]),
-    #              df['temp_cell'][max_pos],
-    #              'rgb(0, 0, 0)'
-    #              ],
-    #     },
-    #     orient='index',
-    #     columns=['short_label', 'hover_label', 'value', 'color']
-    # ).transpose()
-    #
-    # #
-    # #
-    # # voc_poi = pd.DataFrame.from_dict(
-    # #     {
-    # #         'P99':
-    # #          ['P99',
-    # #           'P99 Voc ',
-    # #           909
-    # #           ]
-    # #      },
-    # #     orient='index',
-    # #     columns = ['short_label','hover_label','value']
-    # # ).transpose()
-    #
-    # #
-    # # voc_poi = {'P99 Voc': np.percentile(df.v_oc, 99),
-    # #            'P99.9 Voc (Recommended)': np.percentile(df.v_oc, 99.9),
-    # #            'Historical Max Voc (Conservative)': df.v_oc.max(),
-    # #            '1 sun, historical min temp (Traditional)': voc_1sun_min_temp
-    # #            }
-    #
-    # print('making output graphs...')
-    #
-    # return_layout = [
-    #     html.P('Simulation results for maximum Voc.'),
-    #     dcc.Graph(
-    #         id='Voc-histogram',
-    #         figure={
-    #             'data': [
-    #                 {'x': voc_hist_x, 'y': voc_hist_y, 'type': 'line',
-    #                  'name': 'Voc'}
-    #             ],
-    #             'layout': go.Layout(
-    #                 xaxis={'title': 'Voc (Volts)'},
-    #                 yaxis={'title': 'hours/year'},
-    #                 # margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
-    #                 hovermode='closest',
-    #                 annotations=[
-    #                     dict(
-    #                         dict(
-    #                             x=voc_poi[s]['value'],
-    #                             y=voc_hist_y[np.argmin(
-    #                                 np.abs(voc_poi[s]['value'] - voc_hist_x))],
-    #                             xref='x',
-    #                             yref='y',
-    #                             xanchor='center',
-    #                             text=voc_poi[s]['short_label'],
-    #                             hovertext=voc_poi[s]['hover_label'],
-    #                             textangle=0,
-    #                             font=dict(
-    #                                 color=voc_poi[s]['color']
-    #                             ),
-    #                             arrowcolor=voc_poi[s]['color'],
-    #                             showarrow=True,
-    #                             align='left',
-    #                             standoff=2,
-    #                             arrowhead=4,
-    #                             ax=0,
-    #                             ay=-40
-    #                         ),
-    #                         align='left'
-    #                     )
-    #                     for s in voc_poi]
-    #             )
-    #         }
-    #     ),
-    #     dcc.Graph(
-    #         id='temperature-histogram',
-    #         figure={
-    #             'data': [
-    #                 {'x': temp_cell_hist_bin[1:-1], 'y': temp_cell_hist[1:],
-    #                  'type': 'line', 'name': 'Cell Temperature'},
-    #                 {'x': temp_air_hist_bin[1:-1], 'y': temp_air_hist[1:],
-    #                  'type': 'line', 'name': 'Air Temperature'}
-    #             ],
-    #             'layout': go.Layout(
-    #                 xaxis={'title': 'Temperature (C)'},
-    #                 yaxis={'title': 'hours/year'},
-    #                 # margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
-    #                 hovermode='closest',
-    #                 annotations=[
-    #                     dict(
-    #                         dict(
-    #                             x=temperature_poi[s]['value'],
-    #                             y=temp_cell_hist_y[np.argmin(
-    #                                 np.abs(temperature_poi[s][
-    #                                            'value'] - temp_cell_hist_x))],
-    #                             xref='x',
-    #                             yref='y',
-    #                             xanchor='center',
-    #                             text=temperature_poi[s]['short_label'],
-    #                             hovertext=temperature_poi[s]['hover_label'],
-    #                             textangle=0,
-    #                             font=dict(
-    #                                 color=temperature_poi[s]['color']
-    #                             ),
-    #                             arrowcolor=temperature_poi[s]['color'],
-    #                             showarrow=True,
-    #                             align='left',
-    #                             standoff=2,
-    #                             arrowhead=4,
-    #                             ax=0,
-    #                             ay=-40
-    #                         ),
-    #                         align='left'
-    #                     )
-    #                     for s in temperature_poi]
-    #             )
-    #         }
-    #     ),
-    #     html.Div(
-    #         'Calculation performed for {:.1f} years, showing position of maximum Voc'.format(
-    #             info['timedelta_in_years'])),
-    #     dcc.Graph(
-    #         id='temperature-PLOT',
-    #         figure={
-    #             'data': [
-    #                 {'x': weather.index[plot_min_index:plot_max_index],
-    #                  'y': df['temp_cell'][plot_min_index:plot_max_index],
-    #                  'type': 'line', 'name': 'Cell Temperature'},
-    #                 {'x': weather.index[plot_min_index:plot_max_index],
-    #                  'y': df['temp_air'][plot_min_index:plot_max_index],
-    #                  'type': 'line', 'name': 'Air Temperature'}
-    #             ],
-    #             'layout': go.Layout(
-    #                 xaxis={'title': 'Date'},
-    #                 yaxis={'title': 'Temperature (C)'},
-    #                 # margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
-    #                 hovermode='closest',
-    #                 annotations=[
-    #                     dict(
-    #                         dict(
-    #                             x=weather.index[max_pos],
-    #                             y=df['temp_cell'][max_pos],
-    #                             xref='x',
-    #                             yref='y',
-    #                             xanchor='center',
-    #                             text='Hist',
-    #                             hovertext='Historical max Voc: {:.2f} V<br>'
-    #                                       'Air temperature: {:.0f} C<br>'
-    #                                       'Cell temperature: {:.0f} C<br>'
-    #                                       'GHI: {:.0f} W/m^2'.format(
-    #                                 df['v_oc'][max_pos],
-    #                                 df['temp_air'][max_pos],
-    #                                 df['temp_cell'][max_pos],
-    #                                 df['ghi'][max_pos]),
-    #                             textangle=0,
-    #                             showarrow=True,
-    #                             standoff=2,
-    #                             arrowhead=4,
-    #                             borderwidth=2,
-    #                             borderpad=4,
-    #                             opacity=0.8,
-    #                             bgcolor='#ffffff',
-    #                             ax=0,
-    #                             ay=-40
-    #                         ),
-    #                         align='center'
-    #                     )]
-    #             )
-    #         }
-    #     ),
-    #     # html.A(html.Button('Download results as csv'),href=''),
-    #     # dbc.Button('Download results as csv',id='download_csv',n_clicks=0),
-    #     html.H4('Results summary'),
-    #     # html.Details([
-    #         # html.Summary('View text summary'),
-    #     html.Div([html.P(s) for s in summary],
-    #              style={'marginLeft': 10}),
-    #     # ]),
-    #     # html.P(
-    #     #     html.A('Download full data as csv file (use firefox)', id='download-data',href=save_filename)
-    #     # ),
-    #     html.Div([
-    #         html.A('Download 1 year raw data as csv',
-    #            id='download-link',
-    #            download='rawdata.csv',
-    #            href=csv_string_one_year,
-    #            target='_blank'),
-    #         ]),
-    #     html.Div([
-    #     html.A('Download all raw data as csv (use firefox)',
-    #            id='download-link',
-    #            download='rawdata.csv',
-    #            href=csv_string,
-    #            target='_blank'),
-    #         ]),
-    #     # html.Button(id='download-summary', children='Download Summary'),
-    #     # html.Button(id='download-data', children='Download Data as CSV')
-    # ]
-    #
-    #
-    #
-    # # print('converting to json...')
-    # # weather_json = weather.to_json()
-    # # print('done')
-    #
-    # print('** Calculation done.')
+    weather, info = pvtoolslib.get_s3_weather_data(
+        filedata_closest['filename'].iloc[0])
+
+    print(pd.Series(info))
 
 
-    # return []
-#
-#
-# @app.callback([],
-#               [Input('download_csv','n_clicks')]
-#               [State('results-store', 'children')])
-# def update_Voco(n_clicks,results):
-#     print(results)
+
+    df = vocmaxlib.simulate_system(weather, info,module_parameters,
+                                   racking_parameters, thermal_model)
+
+    # df_temp = pd.DataFrame(info,index=[0])
+    df_temp = df.copy()
+    df_temp['wind_speed'] = df_temp['wind_speed'].map(lambda x: '%2.1f' % x)
+    df_temp['v_oc'] = df_temp['v_oc'].map(lambda x: '%3.2f' % x)
+    df_temp['temp_cell'] = df_temp['temp_cell'].map(lambda x: '%2.1f' % x)
+    df_temp['aoi'] = df_temp['aoi'].map(lambda x: '%3.0f' % x)
 
 
-#
-#
-#
-# @app.server.route('/download_simulation_data/',
-#                   [State('results-store','children')
-#                    ])
-# def download_simulation_data(x):
-#     #Create DF
-#     d = {'col1': [1, 2], 'col2': [3, 4]}
-#     df = pd.DataFrame(data=d)
-#
-#     #Convert DF
-#     str_io = io.StringIO()
-#     df.to_csv(str_io, sep=",")
-#
-#     mem = io.BytesIO()
-#     mem.write(str_io.getvalue().encode('utf-8'))
-#     mem.seek(0)
-#     str_io.close()
-#
-#
-#
-#     # excel_writer = pd.ExcelWriter(strIO, engine="xlsxwriter")
-#     # df.to_excel(excel_writer, sheet_name="sheet1")
-#     # excel_writer.save()
-#     # excel_data = strIO.getvalue()
-#     # stream.seek(0)
-#
-#     return flask.send_file(mem,
-# 					   mimetype='text/csv',
-# 					   attachment_filename='downloadFile.csv',
-# 					   as_attachment=True)
-# @app.server.route('/downloads/<path:path>')
-# def serve_static(path):
-#     root_dir = os.getcwd()
-#     return flask.send_from_directory(
-#         os.path.join(root_dir, 'downloads'), path
-#     )
+    #Create DF
+    d = {'col1': [1, 2], 'col2': [3, 4]}
+    df = pd.DataFrame(data=d)
 
+
+
+    #Convert DF
+    str_io = io.StringIO()
+    pd.DataFrame(
+        {**info, **module_parameters, **thermal_model_dict, **racking_parameters},
+                 index=['']).to_csv(str_io, sep=",",index=False)
+    # pd.DataFrame(module_parameters, index=['']).to_csv(str_io, sep=",")
+    # pd.DataFrame(racking_parameters, index=['']).to_csv(str_io, sep=",")
+    df_temp.to_csv(str_io, sep=",",index=False)
+
+    mem = io.BytesIO()
+    mem.write(str_io.getvalue().encode('utf-8'))
+    mem.seek(0)
+    str_io.close()
+
+
+
+    return flask.send_file(mem,
+					   mimetype='text/csv',
+					   attachment_filename='simulation_data_full.csv',
+					   as_attachment=True)
+
+
+@app.server.route('/download_weather/get')
+def download_weather_data():
+    # print('Values found:')
+    param = flask.request.args
+    print(param)
+
+    # print('Sending download weather data')
+
+
+    filedata = pvtoolslib.get_s3_filename_df()
+    filedata_closest = nsrdbtools.find_closest_datafiles(float(param['lat']),
+                                                         float(param['lon']),
+                                                         filedata)
+    weather, info = pvtoolslib.get_s3_weather_data(
+        filedata_closest['filename'].iloc[0])
+
+
+    #
+    # df = weather
+
+    #Create DF
+    # d = {'col1': [1, 2,3], 'col2': [3, 4,5]}
+    # df = pd.DataFrame(data=d)
+
+
+    #Convert DF
+    # with str_io as io.StringIO():
+    str_io = io.StringIO()
+    pd.DataFrame(info,index=['']).to_csv(str_io, sep=",")
+    weather.to_csv(str_io, sep=",")
+    # df.to_csv(str_io, sep=",")
+
+
+    mem = io.BytesIO()
+    mem.write(str_io.getvalue().encode('utf-8'))
+    mem.seek(0)
+    str_io.close()
+
+    # print(str_io)
+
+    # excel_writer = pd.ExcelWriter(strIO, engine="xlsxwriter")
+    # df.to_excel(excel_writer, sheet_name="sheet1")
+    # excel_writer.save()
+    # excel_data = strIO.getvalue()
+    # stream.seek(0)
+
+
+    # return 'hello 22'
+
+    return flask.send_file(mem,
+					   mimetype='text/csv',
+					   attachment_filename='weather.csv',
+					   as_attachment=True)
 
 
 if __name__ == '__main__':
