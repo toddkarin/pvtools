@@ -289,6 +289,9 @@ layout = dbc.Container([
                                             """),
                                 dbc.Input(id='FD', value='1', type='text',
                                           style={'max-width': 200}),
+                                html.P(''),
+                                # dbc.Button('Calculate module parameters',id='show_iv',n_clicks=0),
+                                html.Div(id='manual_iv')
                                 # dbc.Label("""AOI model. Loss model for
                                 # angle-of-incidence losses. These occur due to
                                 # reflection from surfaces above the cell.
@@ -798,28 +801,12 @@ def update_Voco(racking_model):
 #
 
 
-@app.callback(Output('module_name_iv', 'children'),
-              [Input('module_name', 'value')
-               ])
-def prepare_data(module_name):
-    # print(module_name)
-    module_parameters = pvtoolslib.cec_modules[module_name].to_dict()
-    module_parameters['FD'] = 1
-    module_parameters['name'] = module_name
-    module_parameters['aoi_model'] = 'no_loss'
-
-    # html.Details([
-    #     html.Summary(
-    #         "Can I run the code myself?"),
-
-    info_df = pd.DataFrame.from_dict({
-        'Parameter': list(module_parameters.keys())
-    })
-    info_df['Value'] = info_df['Parameter'].map(module_parameters)
+def make_iv_summary_layout(module_parameters):
 
     extra_parameters = vocmaxlib.calculate_extra_module_parameters_cec(
         module_parameters)
-    extra_parameters['Value'] = extra_parameters['Value'].map(lambda x: '%2.3f' % x)
+    extra_parameters['Value'] = extra_parameters['Value'].map(
+        lambda x: '%2.3f' % x)
 
     # Calculate some IV curves.
     irradiance_list = [1000, 800, 600, 400, 200]
@@ -829,108 +816,228 @@ def prepare_data(module_name):
         ret['effective_irradiance'] = e
         ret['legend'] = str(e) + ' W/m^2'
         iv_curve.append(ret)
-
     return [
+        dbc.Row([
+            dbc.Col([
+                html.P('I-V curves at 25 C.'),
+                dcc.Graph(
+                    figure={
+                        'data': [
+                            {'x': s['v'], 'y': s['i'], 'type': 'line',
+                             'name': s['legend']} for s in iv_curve
+                        ],
+                        'layout': go.Layout(
+                            # title=go.layout.Title(
+                            #     text='I-V curves at 25 C.',
+                            #     xref='paper',
+                            #     x=0
+                            # ),
+                            legend=dict(x=.05, y=0.05),
+                            autosize=True,
+                            xaxis={'title': 'Voltage (V)'},
+                            yaxis={'title': 'Current (A)'},
+                            margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
+                            hovermode='closest',
+                        )
+                    }
+                ),
+            ],width=6),
+            dbc.Col([
+                dcc.Markdown("""Predicted module parameters from CEC model are shown 
+                    in the table below. It is highly recommended to cross-check these 
+                    values with the module datasheet provided by the manufacturer. 
+        
+                    """),
+                dbc.Table.from_dataframe(extra_parameters,
+                                         striped=False,
+                                         bordered=True,
+                                         hover=True,
+                                         index=False,
+                                         size='sm',
+                                         style={'font-size':'0.8rem'})
+            ],width=6)
+        ])
+    ]
+    # return [
+    #     html.P('I-V curves at 25 C.'),
+    #     dcc.Graph(
+    #         figure={
+    #             'data': [
+    #                 {'x': s['v'], 'y': s['i'], 'type': 'line',
+    #                  'name': s['legend']} for s in iv_curve
+    #             ],
+    #             'layout': go.Layout(
+    #                 # title=go.layout.Title(
+    #                 #     text='I-V curves at 25 C.',
+    #                 #     xref='paper',
+    #                 #     x=0
+    #                 # ),
+    #                 autosize=True,
+    #                 xaxis={'title': 'Voltage (V)'},
+    #                 yaxis={'title': 'Current (A)'},
+    #                 margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
+    #                 hovermode='closest',
+    #                 # annotations=[
+    #                 #     dict(
+    #                 #         dict(
+    #                 #             x=voc_summary['v_oc'][s],
+    #                 #             y=voc_hist_y[np.argmin(
+    #                 #                 np.abs(
+    #                 #                     voc_summary['v_oc'][s] - voc_hist_x))],
+    #                 #             xref='x',
+    #                 #             yref='y',
+    #                 #             xanchor='center',
+    #                 #             text=s,
+    #                 #             hovertext=voc_summary['long_note'][s],
+    #                 #             textangle=0,
+    #                 #             font=dict(
+    #                 #                 color=plot_color[s]
+    #                 #             ),
+    #                 #             arrowcolor=plot_color[s],
+    #                 #             # bordercolor=plot_color[s],
+    #                 #             showarrow=True,
+    #                 #             align='left',
+    #                 #             standoff=2,
+    #                 #             arrowhead=4,
+    #                 #             ax=0,
+    #                 #             ay=-40
+    #                 #         ),
+    #                 #         align='left'
+    #                 #     )
+    #                 #     for s in list(voc_summary.index)]
+    #             )
+    #         }
+    #     ),
+    #     dcc.Markdown("""Predicted module parameters from CEC model are shown
+    #         in the table below. It is highly recommended to cross-check these
+    #         values with the module datasheet provided by the manufacturer.
+    #
+    #         """),
+    #     dbc.Table.from_dataframe(extra_parameters,
+    #                              striped=False,
+    #                              bordered=True,
+    #                              hover=True,
+    #                              index=False,
+    #                              size='sm')
+    # ]
+
+
+@app.callback(Output('module_name_iv', 'children'),
+              [Input('module_name', 'value')
+               ])
+def prepare_data(module_name):
+    """
+    Callback for IV curve plotting in setting module parameters.
+
+    Parameters
+    ----------
+    module_name
+
+    Returns
+    -------
+
+    """
+    # print(module_name)
+    module_parameters = pvtoolslib.cec_modules[module_name].to_dict()
+    module_parameters['FD'] = 1
+    module_parameters['name'] = module_name
+    module_parameters['aoi_model'] = 'no_loss'
+
+
+    info_df = pd.DataFrame.from_dict({
+        'Parameter': list(module_parameters.keys())
+    })
+    info_df['Value'] = info_df['Parameter'].map(module_parameters)
+
+    info_layout = [
         html.Details([
             html.Summary('View input parameters'),
             dcc.Markdown("""For convenience, all parameters in the CEC 
-            database are shown below. However, only the following subset are 
-            used in the calculation: 
-            
-            * **alpha_sc**. The short-circuit current temperature coefficient of 
-            the module in units of A/C
-             
-            * **a_ref**. The product of the usual diode ideality factor (n, 
-            unitless), number of cells in series (Ns), and cell thermal 
-            voltage at reference conditions, in units of V. 
-            
-            * **I_L_ref**. The light-generated current (or photocurrent) at 
-            reference conditions, in amperes. 
-    
-            * **I_o_ref**. The dark or diode reverse saturation current at 
-            reference conditions, in amperes.
-            
-            * **R_sh_ref**. The shunt resistance at reference conditions, 
-            in ohms. 
-            
-            * **R_s**. The series resistance at reference conditions, in ohms.
-            
-            * **Adjust**. The adjustment to the temperature coefficient for 
-            short circuit current, in percent. 
-            
-            * **FD**. Fraction of diffuse irradiance arriving at the PV cell.
-     
-            """.replace('    ','')),
+        database are shown below. However, only the following subset are 
+        used in the calculation: 
+
+        * **alpha_sc**. The short-circuit current temperature coefficient of 
+        the module in units of A/C
+
+        * **a_ref**. The product of the usual diode ideality factor (n, 
+        unitless), number of cells in series (Ns), and cell thermal 
+        voltage at reference conditions, in units of V. 
+
+        * **I_L_ref**. The light-generated current (or photocurrent) at 
+        reference conditions, in amperes. 
+
+        * **I_o_ref**. The dark or diode reverse saturation current at 
+        reference conditions, in amperes.
+
+        * **R_sh_ref**. The shunt resistance at reference conditions, 
+        in ohms. 
+
+        * **R_s**. The series resistance at reference conditions, in ohms.
+
+        * **Adjust**. The adjustment to the temperature coefficient for 
+        short circuit current, in percent. 
+
+        * **FD**. Fraction of diffuse irradiance arriving at the PV cell.
+
+        """.replace('    ', '')),
             dbc.Table.from_dataframe(info_df,
                                      striped=False,
                                      bordered=True,
                                      hover=True,
                                      index=False,
                                      size='sm')
-        ]),
-        html.P('I-V curves at 25 C.'),
-        dcc.Graph(
-            figure={
-                'data': [
-                    {'x': s['v'], 'y': s['i'], 'type': 'line',
-                     'name': s['legend']} for s in iv_curve
-                ],
-                'layout': go.Layout(
-                    # title=go.layout.Title(
-                    #     text='I-V curves at 25 C.',
-                    #     xref='paper',
-                    #     x=0
-                    # ),
-                    autosize=True,
-                    xaxis={'title': 'Voltage (V)'},
-                    yaxis={'title': 'Current (A)'},
-                    margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
-                    hovermode='closest',
-                    # annotations=[
-                    #     dict(
-                    #         dict(
-                    #             x=voc_summary['v_oc'][s],
-                    #             y=voc_hist_y[np.argmin(
-                    #                 np.abs(
-                    #                     voc_summary['v_oc'][s] - voc_hist_x))],
-                    #             xref='x',
-                    #             yref='y',
-                    #             xanchor='center',
-                    #             text=s,
-                    #             hovertext=voc_summary['long_note'][s],
-                    #             textangle=0,
-                    #             font=dict(
-                    #                 color=plot_color[s]
-                    #             ),
-                    #             arrowcolor=plot_color[s],
-                    #             # bordercolor=plot_color[s],
-                    #             showarrow=True,
-                    #             align='left',
-                    #             standoff=2,
-                    #             arrowhead=4,
-                    #             ax=0,
-                    #             ay=-40
-                    #         ),
-                    #         align='left'
-                    #     )
-                    #     for s in list(voc_summary.index)]
-                )
-            }
-        ),
-        dcc.Markdown("""Predicted module parameters from CEC model are shown 
-        in the table below. It is highly recommended to cross-check these 
-        values with the module datasheet provided by the manufacturer. 
-         
-        """),
-        dbc.Table.from_dataframe(extra_parameters,
-                                 striped=False,
-                                 bordered=True,
-                                 hover=True,
-                                 index=False,
-                                 size='sm')
+        ])
+        ]
+
+    temp_layout = make_iv_summary_layout(module_parameters)
+
+    # Return flattened list.
+    return [item for sublist in [info_layout,temp_layout] for item in sublist]
 
 
-    ]
+@app.callback(Output('manual_iv', 'children'),
+              [
+                  # Input('show_iv', 'n_clicks')
+                  Input('module_name_manual', 'value'),
+                  Input('alpha_sc', 'value'),
+                  Input('a_ref', 'value'),
+                  Input('I_L_ref', 'value'),
+                  Input('I_o_ref', 'value'),
+                  Input('R_sh_ref', 'value'),
+                  Input('R_s', 'value'),
+                  Input('Adjust', 'value'),
+                  Input('FD', 'value'),
+               ]
+              )
+def prepare_data(module_name_manual,
+                 alpha_sc, a_ref, I_L_ref, I_o_ref, R_sh_ref, R_s, Adjust, FD):
+    try:
+        module_parameters = {
+            'name': module_name_manual,
+            'alpha_sc': float(alpha_sc),
+            'a_ref': float(a_ref),
+            'I_L_ref': float(I_L_ref),
+            'I_o_ref': float(I_o_ref),
+            'R_sh_ref': float(R_sh_ref),
+            'R_s': float(R_s),
+            'Adjust': float(Adjust),
+            'FD': float(FD)
+        }
+
+        return make_iv_summary_layout(module_parameters)
+
+    except:
+        return [
+            html.P('Input values invalid.')
+        ]
+    # # print(module_name)
+    # module_parameters = pvtoolslib.cec_modules[module_name].to_dict()
+    # module_parameters['FD'] = 1
+    # module_parameters['name'] = module_name
+    # module_parameters['aoi_model'] = 'no_loss'
+    #
+
+
 
 
 
