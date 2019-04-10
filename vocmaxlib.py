@@ -256,6 +256,8 @@ def make_voc_summary(df,module_parameters,max_string_voltage=1500):
     mean_yearly_min_day_temp = calculate_mean_yearly_min_temp(df.index[df['ghi']>150],
                                               df['temp_air'][df['ghi']>150])
 
+
+
     # Calculate some standard voc values.
     voc_values = {
         'Hist': df['v_oc'].max(),
@@ -347,6 +349,9 @@ def make_simulation_summary(df, info,module_parameters,racking_parameters,
     if 'Time Zone' in info:
         info['local_time_zone'] = info['Time Zone']
 
+    extra_parameters = calculate_extra_module_parameters_cec(module_parameters)
+
+
     summary = \
         'Weather data,\n' + \
         pd.Series(info)[
@@ -355,6 +360,8 @@ def make_simulation_summary(df, info,module_parameters,racking_parameters,
              'timedelta_in_years']].to_csv(header=False) +  '\n' + \
         'Module Parameters\n' + \
         pd.Series(module_parameters).to_csv(header=False) + '\n' + \
+        'Simulated Module Parameters\n' + \
+        extra_parameters.to_csv() + '\n' + \
         'Racking Parameters\n' + \
         pd.Series(racking_parameters).to_csv(header=False) +  '\n' + \
         'Thermal model\n' + \
@@ -599,7 +606,27 @@ def calculate_extra_module_parameters_cec(module_parameters,reference_irradiance
     param['Bisco'] = isc_fit_coeff[0]
 
 
-    return param
+    description = {
+        'Voco':'Open circuit voltage at STC (V)',
+        'Isco':'Short circuit current at STC (A)',
+        'Impo':'Max power current at STC (A)',
+        'Vmpo':'Max power voltage at STC (V)',
+        'Pmpo':'Max power power at STC (W)',
+        'Bvoco':'Temperature coeff. of open circuit voltage near STC (V/C)',
+        'Bpmpo':'Temperature coeff. of max power near STC (W/C)',
+        'Bisco':'Tempearture coeff. of short circuit current near STC (A/C)'
+    }
+
+    extra_parameters = pd.DataFrame(
+                index= list(param.keys()),
+                 columns=['Parameter','Value','Description'])
+
+    extra_parameters['Parameter'] = extra_parameters.index
+    extra_parameters['Value'] = extra_parameters.index.map(param)
+    extra_parameters['Description'] = extra_parameters.index.map(description)
+
+
+    return extra_parameters
 
 def calculate_mean_yearly_min_temp(datetimevec, temperature):
     """

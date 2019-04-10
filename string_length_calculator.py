@@ -144,40 +144,58 @@ layout = dbc.Container([
 
     # html.H2('Simulation Input'),
     html.H2('Weather'),
+    dbc.Card([
+        dbc.CardHeader('Choose Location'),
+        dbc.CardBody([
+            dbc.Row([
+                dbc.Col([
+                    html.P(
+                        'Enter Latitude and longitude to set target point for weather data.'),
+                    dbc.Label('Latitude'),
+                    dbc.Input(id='lat', value='37.88', type='text'),
+                    dbc.Label('Longitude'),
+                    dbc.Input(id='lon', value='-122.25', type='text'),
+                    dbc.FormText(id='closest-message',
+                             children='Closest point shown on map'),
+                    html.P(''),
+                    html.Div([
+                    dbc.Button(id='get-weather', n_clicks=0,
+                                           children='Show On Map'),
+                        ]),
+                    # dbc.Label(id='temperature-help'),
+                    # html.Table([
+                    #     html.Tr([
+                    #         html.Td([
+                    #             html.P('Latitude'),
+                    #             dbc.Input(id='lat', value='37.88', type='text')
+                    #         ]),
+                    #         html.Td([
+                    #             html.P('Longitude'),
+                    #             dbc.Input(id='lon', value='-122.25', type='text')
+                    #         ]),
+                    #         html.Td([
+                    #             html.P('Get Data'),
+                    #             dbc.Button(id='get-weather', n_clicks=0,
+                    #                        children='Show Map')
+                    #         ])
+                    #     ])
+                    # ]),
+                    # html.Label('Latitude (degrees)'),
+                    # dbc.Input(id='lat', value=37.88, type='number'),
+                    # html.Label('Longitude (degrees)'),
+                    # dbc.Input(id='lon', value=-122.25, type='number'),
+                    # html.Div(
+                    #     'Press button to get closest weather data to target point'),
+                    # dbc.Button(id='get-weather', n_clicks=0,
+                    #             children='Get Weather Data'),
 
-    html.P(
-        'Enter Latitude and longitude to set target point for weather data.'),
-    html.Table([
-        html.Tr([
-            html.Td([
-                html.P('Latitude'),
-                dbc.Input(id='lat', value='37.88', type='text')
-            ]),
-            html.Td([
-                html.P('Longitude'),
-                dbc.Input(id='lon', value='-122.25', type='text')
-            ]),
-            html.Td([
-                html.P('Get Data'),
-                dbc.Button(id='get-weather', n_clicks=0,
-                           children='Show Map')
+                ],width=4),
+                dbc.Col([
+                    html.Div(id='location-map', children=[dcc.Graph(id='map')])
+                ],width=8)
             ])
-        ])
+        ]),
     ]),
-    # html.Label('Latitude (degrees)'),
-    # dbc.Input(id='lat', value=37.88, type='number'),
-    # html.Label('Longitude (degrees)'),
-    # dbc.Input(id='lon', value=-122.25, type='number'),
-    # html.Div(
-    #     'Press button to get closest weather data to target point'),
-    # dbc.Button(id='get-weather', n_clicks=0,
-    #             children='Get Weather Data'),
-    html.Div(id='closest-message',
-             children='Closest point shown on map'),
-    html.Div(id='location-map', children=[
-        dcc.Graph(id='map')
-    ],
-             style={'align': 'left'}),
     html.H2('Simulation Parameters'),
     dbc.Card([
         dbc.CardHeader('Module Parameters'),
@@ -200,7 +218,7 @@ layout = dbc.Container([
                                     id='module_name',
                                     options=pvtoolslib.cec_module_dropdown_list,
                                     value=pvtoolslib.cec_module_dropdown_list[0]['value'],
-                                    style={'max-width': 500},
+                                    style={'max-width': 500}
                                 ),
                                 html.Div(id='module_name_iv')
                              ],
@@ -468,9 +486,14 @@ layout = dbc.Container([
         ]),
 
     html.H3('Calculate Voc'),
-    html.P('Press "Calculate" to run Voc calculation (~10 seconds)'),
-    dbc.Button(id='submit-button', n_clicks=0, children='Calculate',
-               color="primary"),
+    dbc.Card([
+        dbc.CardHeader('Calculation'),
+        dbc.CardBody([
+            html.P('Press "Calculate" to run Voc calculation (~10 seconds)'),
+            dbc.Button(id='submit-button', n_clicks=0, children='Calculate',
+                       color="secondary"),
+        ])
+    ]),
     # html.P(' '),
     # html.A(dbc.Button(id='submit-button-with-download',
     #                   n_clicks=0,
@@ -485,6 +508,7 @@ layout = dbc.Container([
     #               ],
     #               values=[]
     #               ),
+
     html.H2('Results'),
     html.Div(id='load'),
     html.Div(id='graphs', style={'display': 'none'}),
@@ -658,9 +682,9 @@ def update_map_callback(n_clicks, lat, lon):
 
         ],
         'layout': go.Layout(
-            autosize=False,
-            width=1000,
-            height=600,
+            autosize=True,
+            # width=1000,
+            # height=600,
             margin={'l': 10, 'b': 10, 't': 0, 'r': 0},
             hovermode='closest',
             mapbox=dict(
@@ -778,7 +802,7 @@ def update_Voco(racking_model):
               [Input('module_name', 'value')
                ])
 def prepare_data(module_name):
-    print(module_name)
+    # print(module_name)
     module_parameters = pvtoolslib.cec_modules[module_name].to_dict()
     module_parameters['FD'] = 1
     module_parameters['name'] = module_name
@@ -793,13 +817,9 @@ def prepare_data(module_name):
     })
     info_df['Value'] = info_df['Parameter'].map(module_parameters)
 
-    module_paramaters_extra = vocmaxlib.calculate_extra_module_parameters_cec(
+    extra_parameters = vocmaxlib.calculate_extra_module_parameters_cec(
         module_parameters)
-    info_extra_df = pd.DataFrame.from_dict({
-        'Parameter': list(module_paramaters_extra.keys())
-    })
-    info_extra_df['Value'] = info_extra_df['Parameter'].map(module_paramaters_extra)
-    info_extra_df['Value'] = info_extra_df['Value'].map(lambda x: '%2.3f' % x)
+    extra_parameters['Value'] = extra_parameters['Value'].map(lambda x: '%2.3f' % x)
 
     # Calculate some IV curves.
     irradiance_list = [1000, 800, 600, 400, 200]
@@ -848,65 +868,67 @@ def prepare_data(module_name):
                                      index=False,
                                      size='sm')
         ]),
-        dbc.Row([
-            dbc.Col([
-                dcc.Graph(
-                    figure={
-                        'data': [
-                            {'x': s['v'], 'y': s['i'], 'type': 'line',
-                             'name': s['legend']} for s in iv_curve
-                        ],
-                        'layout': go.Layout(
-                            title=go.layout.Title(
-                                text='I-V curves at 25 C.',
-                                xref='paper',
-                                x=0
-                            ),
-                            xaxis={'title': 'Voltage (V)'},
-                            yaxis={'title': 'Current (A)'},
-                            # margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
-                            hovermode='closest',
-                            # annotations=[
-                            #     dict(
-                            #         dict(
-                            #             x=voc_summary['v_oc'][s],
-                            #             y=voc_hist_y[np.argmin(
-                            #                 np.abs(
-                            #                     voc_summary['v_oc'][s] - voc_hist_x))],
-                            #             xref='x',
-                            #             yref='y',
-                            #             xanchor='center',
-                            #             text=s,
-                            #             hovertext=voc_summary['long_note'][s],
-                            #             textangle=0,
-                            #             font=dict(
-                            #                 color=plot_color[s]
-                            #             ),
-                            #             arrowcolor=plot_color[s],
-                            #             # bordercolor=plot_color[s],
-                            #             showarrow=True,
-                            #             align='left',
-                            #             standoff=2,
-                            #             arrowhead=4,
-                            #             ax=0,
-                            #             ay=-40
-                            #         ),
-                            #         align='left'
-                            #     )
-                            #     for s in list(voc_summary.index)]
-                        )
-                    }
-                ),
-            ],width=8),
-            dbc.Col([
-                dbc.Table.from_dataframe(info_extra_df,
-                                         striped=False,
-                                         bordered=True,
-                                         hover=True,
-                                         index=False,
-                                         size='sm')
-            ],width=4)
-        ],align="center")
+        html.P('I-V curves at 25 C.'),
+        dcc.Graph(
+            figure={
+                'data': [
+                    {'x': s['v'], 'y': s['i'], 'type': 'line',
+                     'name': s['legend']} for s in iv_curve
+                ],
+                'layout': go.Layout(
+                    # title=go.layout.Title(
+                    #     text='I-V curves at 25 C.',
+                    #     xref='paper',
+                    #     x=0
+                    # ),
+                    autosize=True,
+                    xaxis={'title': 'Voltage (V)'},
+                    yaxis={'title': 'Current (A)'},
+                    margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
+                    hovermode='closest',
+                    # annotations=[
+                    #     dict(
+                    #         dict(
+                    #             x=voc_summary['v_oc'][s],
+                    #             y=voc_hist_y[np.argmin(
+                    #                 np.abs(
+                    #                     voc_summary['v_oc'][s] - voc_hist_x))],
+                    #             xref='x',
+                    #             yref='y',
+                    #             xanchor='center',
+                    #             text=s,
+                    #             hovertext=voc_summary['long_note'][s],
+                    #             textangle=0,
+                    #             font=dict(
+                    #                 color=plot_color[s]
+                    #             ),
+                    #             arrowcolor=plot_color[s],
+                    #             # bordercolor=plot_color[s],
+                    #             showarrow=True,
+                    #             align='left',
+                    #             standoff=2,
+                    #             arrowhead=4,
+                    #             ax=0,
+                    #             ay=-40
+                    #         ),
+                    #         align='left'
+                    #     )
+                    #     for s in list(voc_summary.index)]
+                )
+            }
+        ),
+        dcc.Markdown("""Predicted module parameters from CEC model are shown 
+        in the table below. It is highly recommended to cross-check these 
+        values with the module datasheet provided by the manufacturer. 
+         
+        """),
+        dbc.Table.from_dataframe(extra_parameters,
+                                 striped=False,
+                                 bordered=True,
+                                 hover=True,
+                                 index=False,
+                                 size='sm')
+
 
     ]
 
@@ -1007,11 +1029,11 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     """
 # def run_simulation(*argv):
 
-    # print('Run simulation!!')
+
     if n_clicks<1:
         # print('Not running simulation.')
         return []
-
+    print('Run simulation!!')
 
     # Get weather
 
@@ -1020,7 +1042,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                                                          filedata)
 
 
-    print('Getting weather data...')
+    # print('Getting weather data...')
     weather, info = pvtoolslib.get_s3_weather_data(
         filedata_closest['filename'].iloc[0])
 
