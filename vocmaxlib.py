@@ -467,16 +467,7 @@ def calculate_voc(effective_irradiance, temperature, module_parameters):
 
     """
     photocurrent, saturation_current, resistance_series, resistance_shunt, nNsVth = \
-        pvlib.pvsystem.calcparams_cec(effective_irradiance,
-                                      temperature,
-                                      module_parameters['alpha_sc'],
-                                      module_parameters['a_ref'],
-                                      module_parameters['I_L_ref'],
-                                      module_parameters['I_o_ref'],
-                                      module_parameters['R_sh_ref'],
-                                      module_parameters['R_s'],
-                                      module_parameters['Adjust'],
-                                      )
+        calcparams_cec(effective_irradiance, temperature, module_parameters)
 
     # out = pvlib.pvsystem.singlediode(photocurrent, saturation_current, resistance_series, resistance_shunt, nNsVth,
     #                            method='newton')
@@ -489,6 +480,21 @@ def calculate_voc(effective_irradiance, temperature, module_parameters):
                                                nNsVth,
                                                method='newton')
     return v_oc
+
+def calcparams_cec(effective_irradiance, temperature, module_parameters):
+
+    photocurrent, saturation_current, resistance_series, resistance_shunt, nNsVth = \
+        pvlib.pvsystem.calcparams_cec(effective_irradiance,
+                                      temperature,
+                                      module_parameters['alpha_sc'],
+                                      module_parameters['a_ref'],
+                                      module_parameters['I_L_ref'],
+                                      module_parameters['I_o_ref'],
+                                      module_parameters['R_sh_ref'],
+                                      module_parameters['R_s'],
+                                      module_parameters['Adjust'],
+                                      )
+    return photocurrent, saturation_current, resistance_series, resistance_shunt, nNsVth
 
 def calculate_iv_curve(effective_irradiance, temperature, module_parameters,
                        ivcurve_pnts=200):
@@ -517,6 +523,83 @@ def calculate_iv_curve(effective_irradiance, temperature, module_parameters,
                                ivcurve_pnts=ivcurve_pnts, method='lambertw')
 
     return iv_curve
+
+def calculate_extra_module_parameters_cec(module_parameters,reference_irradiance=1000, reference_temperature=25):
+    """
+
+    Calculate standard parameters of modules from the CEC model.
+
+    :param module_parameters: dict
+
+
+    :return param: dict
+         Dict of parameters including:
+
+         'Voco' - open circuit voltage at STC.
+
+         'Bvoco' - temperature coefficient of Voc near STC, in V/C
+
+         Isco - short circuit current at STC
+
+         Bisco - temperature coefficient of Isc near STC, in A/C
+
+         Vmpo - voltage at maximum power point at STC, in V
+
+         Pmpo - power at maximum power point at STC, in W
+
+         Impo - current at maximum power point at STC, in A
+
+         Bpmpo - temperature coefficient of maximum power near STC, in W/C
+
+
+    """
+    # Calculate Voc vs. temperature for finding coefficients
+    temp_cell_smooth = np.linspace(reference_temperature-5,
+                                   reference_temperature+5, 5)
+
+    photocurrent, saturation_current, resistance_series, resistance_shunt, nNsVth = \
+        calcparams_cec(effective_irradiance=reference_irradiance,
+                   temperature=temp_cell_smooth,
+                   module_parameters=module_parameters)
+    iv_points = pvlib.pvsystem.singlediode(photocurrent,
+            saturation_current, resistance_series, resistance_shunt, nNsVth)
+
+
+    photocurrent, saturation_current, resistance_series, resistance_shunt, nNsVth = \
+        calcparams_cec(
+        effective_irradiance=reference_irradiance,
+        temperature=reference_temperature,
+        module_parameters=module_parameters)
+
+    iv_points_0 = pvlib.pvsystem.singlediode(photocurrent,
+            saturation_current, resistance_series, resistance_shunt, nNsVth)
+
+
+
+
+
+
+    param = {}
+    param['Voco'] = iv_points_0['v_oc']
+    param['Isco'] = iv_points_0['i_sc']
+    param['Impo'] = iv_points_0['i_mp']
+    param['Vmpo'] = iv_points_0['v_mp']
+    param['Pmpo'] = iv_points_0['p_mp']
+    # param['Ixo'] = iv_points_0['i_x']
+    # param['Ixxo'] = iv_points_0['i_xx']
+
+
+    voc_fit_coeff = np.polyfit(temp_cell_smooth, iv_points['v_oc'], 1)
+    param['Bvoco'] = voc_fit_coeff[0]
+
+    pmp_fit_coeff = np.polyfit(temp_cell_smooth, iv_points['p_mp'], 1)
+    param['Bpmpo'] = pmp_fit_coeff[0]
+
+    isc_fit_coeff = np.polyfit(temp_cell_smooth, iv_points['i_sc'], 1)
+    param['Bisco'] = isc_fit_coeff[0]
+
+
+    return param
 
 def calculate_mean_yearly_min_temp(datetimevec, temperature):
     """

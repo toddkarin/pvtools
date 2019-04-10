@@ -791,20 +791,122 @@ def prepare_data(module_name):
     info_df = pd.DataFrame.from_dict({
         'Parameter': list(module_parameters.keys())
     })
+    info_df['Value'] = info_df['Parameter'].map(module_parameters)
 
-    info_df['value'] = info_df['Parameter'].map(module_parameters)
+    module_paramaters_extra = vocmaxlib.calculate_extra_module_parameters_cec(
+        module_parameters)
+    info_extra_df = pd.DataFrame.from_dict({
+        'Parameter': list(module_paramaters_extra.keys())
+    })
+    info_extra_df['Value'] = info_extra_df['Parameter'].map(module_paramaters_extra)
+    info_extra_df['Value'] = info_extra_df['Value'].map(lambda x: '%2.3f' % x)
+
+    # Calculate some IV curves.
+    irradiance_list = [1000, 800, 600, 400, 200]
+    iv_curve = []
+    for e in irradiance_list:
+        ret = vocmaxlib.calculate_iv_curve(e, 25, module_parameters)
+        ret['effective_irradiance'] = e
+        ret['legend'] = str(e) + ' W/m^2'
+        iv_curve.append(ret)
 
     return [
         html.Details([
             html.Summary('View input parameters'),
+            dcc.Markdown("""For convenience, all parameters in the CEC 
+            database are shown below. However, only the following subset are 
+            used in the calculation: 
+            
+            * **alpha_sc**. The short-circuit current temperature coefficient of 
+            the module in units of A/C
+             
+            * **a_ref**. The product of the usual diode ideality factor (n, 
+            unitless), number of cells in series (Ns), and cell thermal 
+            voltage at reference conditions, in units of V. 
+            
+            * **I_L_ref**. The light-generated current (or photocurrent) at 
+            reference conditions, in amperes. 
+    
+            * **I_o_ref**. The dark or diode reverse saturation current at 
+            reference conditions, in amperes.
+            
+            * **R_sh_ref**. The shunt resistance at reference conditions, 
+            in ohms. 
+            
+            * **R_s**. The series resistance at reference conditions, in ohms.
+            
+            * **Adjust**. The adjustment to the temperature coefficient for 
+            short circuit current, in percent. 
+            
+            * **FD**. Fraction of diffuse irradiance arriving at the PV cell.
+     
+            """.replace('    ','')),
             dbc.Table.from_dataframe(info_df,
                                      striped=False,
                                      bordered=True,
                                      hover=True,
                                      index=False,
-                                     size='sm',
-                                     float_format='{:4.3f}')
-        ])
+                                     size='sm')
+        ]),
+        dbc.Row([
+            dbc.Col([
+                dcc.Graph(
+                    figure={
+                        'data': [
+                            {'x': s['v'], 'y': s['i'], 'type': 'line',
+                             'name': s['legend']} for s in iv_curve
+                        ],
+                        'layout': go.Layout(
+                            title=go.layout.Title(
+                                text='I-V curves at 25 C.',
+                                xref='paper',
+                                x=0
+                            ),
+                            xaxis={'title': 'Voltage (V)'},
+                            yaxis={'title': 'Current (A)'},
+                            # margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
+                            hovermode='closest',
+                            # annotations=[
+                            #     dict(
+                            #         dict(
+                            #             x=voc_summary['v_oc'][s],
+                            #             y=voc_hist_y[np.argmin(
+                            #                 np.abs(
+                            #                     voc_summary['v_oc'][s] - voc_hist_x))],
+                            #             xref='x',
+                            #             yref='y',
+                            #             xanchor='center',
+                            #             text=s,
+                            #             hovertext=voc_summary['long_note'][s],
+                            #             textangle=0,
+                            #             font=dict(
+                            #                 color=plot_color[s]
+                            #             ),
+                            #             arrowcolor=plot_color[s],
+                            #             # bordercolor=plot_color[s],
+                            #             showarrow=True,
+                            #             align='left',
+                            #             standoff=2,
+                            #             arrowhead=4,
+                            #             ax=0,
+                            #             ay=-40
+                            #         ),
+                            #         align='left'
+                            #     )
+                            #     for s in list(voc_summary.index)]
+                        )
+                    }
+                ),
+            ],width=8),
+            dbc.Col([
+                dbc.Table.from_dataframe(info_extra_df,
+                                         striped=False,
+                                         bordered=True,
+                                         hover=True,
+                                         index=False,
+                                         size='sm')
+            ],width=4)
+        ],align="center")
 
     ]
 
