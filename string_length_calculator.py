@@ -59,13 +59,12 @@ layout = dbc.Container([
     # html.Div(str(uuid.uuid4()), id='session-id', style={'display': 'none'}),
     html.Div(id='click-data', style={'display': 'none'}),
     html.H2('Overview'),
-    # html.H1(
-    #     children='Photovoltaic String Length Based on Historical Weather',
-    #     style={
-    #         'textAlign': 'left'
-    #     }
-    # ),
-    html.P("""The maximum open circuit voltage (Voc) is a key design 
+    dcc.Markdown("""This tool predicts the maximum open circuit voltage (Voc) 
+    expected to occur for modules in a solar installation at a particular 
+    location. One application of this tool is to determine optimal string 
+    sizes in accordance with NEC codes []. 
+    
+    The maximum open circuit voltage (Voc) is a key design 
     parameter for solar power plants. This application provides an 
     industry-standard method for calculating the maximum open circuit voltage 
     given weather data and module parameters. Weather data is sourced from the 
@@ -1088,7 +1087,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     if n_clicks<1:
         # print('Not running simulation.')
         return []
-    print('Run simulation!!')
+
 
     # Get weather
 
@@ -1127,12 +1126,15 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         'max_string_voltage': max_string_voltage
     }
 
+
     request_str = '?'
     for p in all_params:
         request_str = request_str  + p + '=' + str(all_params[p]) + '&'
 
     request_str = request_str[0:-1]
     request_str = request_str.replace(' ','_')
+
+    print('String Voltage Calculator: Calculate started with' + request_str)
     # print(request_str)
 
 
@@ -1194,10 +1196,6 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     # print('Getting weather data...')
     weather, info = pvtoolslib.get_s3_weather_data(
         filedata_closest['filename'].iloc[0])
-
-    print(pd.Series(info))
-
-
 
     df = vocmaxlib.simulate_system(weather, info,module_parameters,
                                    racking_parameters, thermal_model)
@@ -1528,7 +1526,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
             }
         ),
         dcc.Markdown(
-            """Download the simulation results as csv files here: 
+            """Download the simulation results as csv files here (use chrome or firefox)
         
             """
         ),
@@ -1697,8 +1695,8 @@ def download_weather_data():
     #Convert DF
     # with str_io as io.StringIO():
     str_io = io.StringIO()
-    pd.DataFrame(info,index=['']).to_csv(str_io, sep=",")
-    weather.to_csv(str_io, sep=",")
+    pd.DataFrame(info,index=['']).to_csv(str_io, sep=",",index=False)
+    weather.to_csv(str_io, sep=",",index=False)
     # df.to_csv(str_io, sep=",")
 
 
