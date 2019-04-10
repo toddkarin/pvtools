@@ -38,7 +38,7 @@ import urllib
 
 from app import app
 
-# mapbox_access_token = 'pk.eyJ1IjoidG9kZGthcmluIiwiYSI6Ik1aSndibmcifQ.hwkbjcZevafx2ApulodXaw'
+
 
 # app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
@@ -189,11 +189,11 @@ layout = dbc.Container([
                     # dbc.Button(id='get-weather', n_clicks=0,
                     #             children='Get Weather Data'),
 
-                ],width=4),
+                ],md=4),
                 dbc.Col([
                     html.Div(id='location-map', children=[dcc.Graph(id='map')])
-                ],width=8)
-            ])
+                ],md=8)
+            ]),
         ]),
     ]),
     html.H2('Simulation Parameters'),
@@ -220,6 +220,7 @@ layout = dbc.Container([
                                     value=pvtoolslib.cec_module_dropdown_list[0]['value'],
                                     style={'max-width': 500}
                                 ),
+                                html.P(''),
                                 html.Div(id='module_name_iv')
                              ],
                         )
@@ -817,6 +818,7 @@ def make_iv_summary_layout(module_parameters):
         ret['legend'] = str(e) + ' W/m^2'
         iv_curve.append(ret)
     return [
+        html.P(''),
         dbc.Row([
             dbc.Col([
                 html.P('I-V curves at 25 C.'),
@@ -836,12 +838,12 @@ def make_iv_summary_layout(module_parameters):
                             autosize=True,
                             xaxis={'title': 'Voltage (V)'},
                             yaxis={'title': 'Current (A)'},
-                            margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
-                            hovermode='closest',
+                            margin={'l': 40, 'b': 90, 't': 10, 'r': 10},
+                        hovermode='closest',
                         )
                     }
                 ),
-            ],width=6),
+            ],md=6),
             dbc.Col([
                 dcc.Markdown("""Predicted module parameters from CEC model are shown 
                     in the table below. It is highly recommended to cross-check these 
@@ -855,7 +857,7 @@ def make_iv_summary_layout(module_parameters):
                                          index=False,
                                          size='sm',
                                          style={'font-size':'0.8rem'})
-            ],width=6)
+            ],md=6)
         ])
     ]
     # return [
@@ -951,35 +953,35 @@ def prepare_data(module_name):
 
     info_layout = [
         html.Details([
-            html.Summary('View input parameters'),
-            dcc.Markdown("""For convenience, all parameters in the CEC 
-        database are shown below. However, only the following subset are 
-        used in the calculation: 
-
-        * **alpha_sc**. The short-circuit current temperature coefficient of 
-        the module in units of A/C
-
-        * **a_ref**. The product of the usual diode ideality factor (n, 
-        unitless), number of cells in series (Ns), and cell thermal 
-        voltage at reference conditions, in units of V. 
-
-        * **I_L_ref**. The light-generated current (or photocurrent) at 
-        reference conditions, in amperes. 
-
-        * **I_o_ref**. The dark or diode reverse saturation current at 
-        reference conditions, in amperes.
-
-        * **R_sh_ref**. The shunt resistance at reference conditions, 
-        in ohms. 
-
-        * **R_s**. The series resistance at reference conditions, in ohms.
-
-        * **Adjust**. The adjustment to the temperature coefficient for 
-        short circuit current, in percent. 
-
-        * **FD**. Fraction of diffuse irradiance arriving at the PV cell.
-
-        """.replace('    ', '')),
+            html.Summary('View database parameters for module'),
+            dcc.Markdown("""For convenience, all parameters in the PVLIB CEC 
+            database related to the selected module are shown in the table. 
+            However, only the following subset are used in the calculation: 
+    
+            * **alpha_sc**. The short-circuit current temperature coefficient of 
+            the module in units of A/C
+    
+            * **a_ref**. The product of the usual diode ideality factor (n, 
+            unitless), number of cells in series (Ns), and cell thermal 
+            voltage at reference conditions, in units of V. 
+    
+            * **I_L_ref**. The light-generated current (or photocurrent) at 
+            reference conditions, in amperes. 
+    
+            * **I_o_ref**. The dark or diode reverse saturation current at 
+            reference conditions, in amperes.
+    
+            * **R_sh_ref**. The shunt resistance at reference conditions, 
+            in ohms. 
+    
+            * **R_s**. The series resistance at reference conditions, in ohms.
+    
+            * **Adjust**. The adjustment to the temperature coefficient for 
+            short circuit current, in percent. 
+    
+            * **FD**. Fraction of diffuse irradiance arriving at the PV cell.
+    
+            """.replace('    ', '')),
             dbc.Table.from_dataframe(info_df,
                                      striped=False,
                                      bordered=True,
