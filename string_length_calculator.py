@@ -132,8 +132,8 @@ layout = dbc.Container([
                 """)
 
             ], style={'marginLeft': 50}),
-            html.P("""This tool provides standard values for methods 690.7(
-            A)(1) and 690.7(A)(3). For method 690.7(A)(1), The lowest 
+            html.P("""This tool provides standard values for methods 690.7(A)(1) 
+            and 690.7(A)(3). For method 690.7(A)(1), The lowest 
             expected ambient temperature is calculated by finding the minimum 
             temperature during daylight hours, defined as GHI>150 W/m^2. For 
             method 690.7(A)(3), the full PVLIB model is run using weather 
@@ -147,27 +147,30 @@ layout = dbc.Container([
 
     dbc.Collapse(
         dbc.Card(dbc.CardBody([
-            dcc.Markdown("""The simulation first acquires weather data from the 
-            National Solar Radiation Database (NSRDB) [1]. The data was sampled 
-            across the continental US at approximately a 0.125 degree grid. If a 
-            different weather data source is desired, it is necessary to use the open 
-            source associated python package [vocmax]( 
-            https://github.com/toddkarin/vocmax), which performs the same calculation 
-            as this web tool. If the particular weather data point is not on the map, 
-            please contact us and we will try to provide it. 
+            dcc.Markdown("""The simulation first acquires weather data from 
+            the National Solar Radiation Database (NSRDB) [1]. The data was 
+            sampled across the continental US at approximately a 0.125 degree 
+            grid, and at a lower resolution elsewhere. If a different weather 
+            data source is desired, it is necessary to use the open source 
+            associated python package [vocmax]( 
+            https://github.com/toddkarin/vocmax), which performs the same 
+            calculation as this web tool. If the particular weather data 
+            point is not on the map, please contact us and we will try to 
+            provide it. 
             
             """),
 
-            dcc.Markdown("""The string voltage calculator uses the open source [ 
-            PVLIB](https://pvlib-python.readthedocs.io/en/latest/) library to perform 
-            the calculation using the single diode model and the CEC 
-            parameterization. Module parameters are either taken from a standard 
-            database or entered manually. The calculation conservatively assumes that 
-            all diffuse irradiance is used and that there are no reflection losses 
-            from the top cell. These two assumptions cause a small increase in the 
-            Voc and make the simulation more conservative. Other specific details of 
-            the calculations are explained in [vocmax]( 
-            https://github.com/toddkarin/vocmax). 
+            dcc.Markdown("""The string voltage calculator uses the open 
+            source [PVLIB](https://pvlib-python.readthedocs.io/en/latest/) 
+            library to perform the calculation using the single diode model 
+            and the CEC parameterization. Module parameters are either taken 
+            from a standard database or entered manually. The calculation 
+            conservatively assumes that all diffuse irradiance is used (FD=1) 
+            and that there are no reflection losses from the top cell (
+            aoi_model='no_loss'). These two assumptions cause a small 
+            increase in the Voc and make the simulation more conservative. 
+            Specific details on the exact calculation method are described in [
+            vocmax](https://github.com/toddkarin/vocmax). 
         
             """),
         ])), id="details-collapse"
@@ -569,22 +572,40 @@ layout = dbc.Container([
     html.H2('Frequently Asked Questions'),
     html.Details([
         html.Summary(
-            "Can I run the code myself?"),
+            "What if I want to run the simulation myself? Where's the source code?"),
         html.Div([
-            dcc.Markdown("""Yes! We have an example for running this 
-            calculation in python. Visit the [github page for vocmax]( 
+            dcc.Markdown("""If you would like to run the calculation as a 
+            python program, please visit the [github page for vocmax]( 
             https://github.com/toddkarin/vocmax) 
  
 
             """),
-
             dcc.Markdown("""Additionally, if you would like to take a look at 
-            the source code for this website, please visit [github page for pvtools](
-            https://github.com/toddkarin/pvtools) 
+            the source code for this website, please visit the [github page 
+            for pvtools]( https://github.com/toddkarin/pvtools) 
             
             """)
 
         ],style={'marginLeft': 50}
+        ),
+
+    ]),
+    html.Details([
+        html.Summary(
+            "Do you store any of my data?"),
+        html.Div([
+            dcc.Markdown("""We take your privacy seriously. We do not store 
+            any metadata related to the simulation. For understanding the 
+            usage of the app, we count the number of times the 'calculate' 
+            button is pressed and also record whether default values were 
+            used or not. We also count the number of unique users that use 
+            the app. We specifically exclude logging any events that generate 
+            identifiable metadata. 
+
+
+            """),
+
+        ], style={'marginLeft': 50}
         ),
 
     ]),
@@ -1351,8 +1372,8 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
 
     # Voc histogram
     voc_hist_y_raw, voc_hist_x_raw = np.histogram(df['v_oc'],
-                        bins=np.linspace(df['v_oc'].max() * 0.4,
-                                         df['v_oc'].max() + 1, 500))
+                        bins=np.linspace(df['v_oc'].max() * 0.6,
+                                         df['v_oc'].max() + 1, 400))
 
     voc_hist_y = scale_to_hours_per_year(voc_hist_y_raw)[1:]
     voc_hist_x = voc_hist_x_raw[1:-1]
