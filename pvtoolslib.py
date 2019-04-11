@@ -15,7 +15,7 @@ import glob
 #     import pickle
 #
 
-version = '0.0.2'
+version = '1.0.0'
 
 # sandia_modules = pvlib.pvsystem.retrieve_sam('SandiaMod')
 
@@ -247,6 +247,24 @@ def get_s3_npz(filename):
     return data
 
 
+def load_npz(filename):
+    """
+    Load npz file from a local file
+
+    Parameters
+    ----------
+    filename
+
+    Returns
+    -------
+
+    """
+    #
+    data = {}
+    with np.load(filename) as arr:
+        for var in list(arr.keys()):
+            data[var] = arr[var]
+    return data
 
 
 
@@ -256,6 +274,17 @@ def get_s3_weather_data(filename):
 
     info = get_s3_npz(filename)
 
+    return build_weather_info(info)
+
+def get_local_weather_data(filename):
+
+
+    data = load_npz(filename)
+    return build_weather_info(data)
+
+
+
+def build_weather_info(info):
 
     for f in info:
         try:
