@@ -463,29 +463,27 @@ layout = dbc.Container([
                             [dbc.Label('Axis Tilt (degrees)'),
                              dbc.Input(id='axis_tilt', value='0', type='text',
                                        style={'max-width': 200}),
-                             dbc.FormText("""The tilt of the axis of rotation (i.e, 
-                        the y-axis defined by axis_azimuth) with respect to 
-                        horizontal, in decimal degrees."""),
+                             dbc.FormText("""The tilt of the axis of rotation 
+                             (i.e, the y-axis defined by axis_azimuth) with 
+                             respect to horizontal, in decimal degrees."""),
                              dbc.Label('Axis Azimuth (degrees)'),
                              dbc.Input(id='axis_azimuth', value='0', type='text',
                                        style={'max-width': 200}),
-                             dbc.FormText("""A value denoting the compass direction along 
-                        which the axis of rotation lies. Measured in decimal degrees 
-                        East of North."""),
+                             dbc.FormText("""A value denoting the compass 
+                             direction along which the axis of rotation lies. 
+                             Measured in decimal degrees East of North."""),
                              dbc.Label('Max Angle (degrees)'),
                              dbc.Input(id='max_angle', value='90', type='text',
                                        style={'max-width': 200}),
-                             dbc.FormText("""A value denoting the maximum rotation angle, 
-                        in decimal degrees, of the one-axis tracker from its 
-                        horizontal position (horizontal if axis_tilt = 0). A 
-                        max_angle of 90 degrees allows the tracker to rotate to a 
-                        vertical position to point the panel towards a horizon. 
-                        max_angle of 180 degrees allows for full rotation."""),
+                             dbc.FormText("""A value denoting the maximum 
+                             rotation angle, in decimal degrees, of the 
+                             one-axis tracker from its horizontal position (
+                             horizontal if axis_tilt = 0). A max_angle of 90 
+                             degrees allows the tracker to rotate to a 
+                             vertical position to point the panel towards a 
+                             horizon. max_angle of 180 degrees allows for 
+                             full rotation."""),
                              dbc.Label('Backtrack'),
-                             dbc.FormText("""Controls whether the tracker has the 
-                         capability to ''backtrack'' to avoid row-to-row shading. False 
-                         denotes no backtrack capability. True denotes backtrack 
-                         capability."""),
                              dbc.RadioItems(
                                  options=[
                                      {"label": "True", "value": True},
@@ -494,17 +492,24 @@ layout = dbc.Container([
                                  value=True,
                                  id="backtrack",
                              ),
+                             dbc.FormText("""Controls whether the tracker has 
+                             the capability to ''backtrack'' to avoid 
+                             row-to-row shading. False denotes no backtrack 
+                             capability. True denotes backtrack 
+                             capability."""),
                              dbc.Label('Ground Coverage Ratio'),
                              dbc.Input(id='ground_coverage_ratio', value='0.286',
                                        type='text',
                                        style={'max-width': 200}),
-                             dbc.FormText("""A value denoting the ground coverage ratio 
-                         of a tracker system which utilizes backtracking; i.e. the 
-                         ratio between the PV array surface area to total ground 
-                         area. A tracker system with modules 2 meters wide, centered 
-                         on the tracking axis, with 6 meters between the tracking 
-                         axes has a gcr of 2/6=0.333. If gcr is not provided, 
-                         a gcr of 2/7 is default. gcr must be <=1"""),
+                             dbc.FormText("""A value denoting the ground 
+                             coverage ratio of a tracker system which 
+                             utilizes backtracking; i.e. the ratio between 
+                             the PV array surface area to total ground area. 
+                             A tracker system with modules 2 meters wide, 
+                             centered on the tracking axis, with 6 meters 
+                             between the tracking axes has a gcr of 
+                             2/6=0.333. If gcr is not provided, a gcr of 2/7 
+                             is default. gcr must be <=1"""),
                              ]
                         )
                     )
@@ -520,7 +525,7 @@ layout = dbc.Container([
             dcc.Markdown("""Set the design max string voltage for the PV system. 
             
             """),
-            dbc.Label('Max string voltage (V)'),
+            dcc.Markdown('**Max string voltage (V)**'),
             dbc.Input(id='max_string_voltage',
                       value='1500',
                       type='text',
@@ -1322,7 +1327,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                                                      'long_note':'Note'
                                                      })
     voc_summary_table['Note'] = voc_summary_table['Note'].apply(
-        lambda s : s.replace('<br>','\n'))
+        lambda s : s.replace('<br>','.  '))
     voc_summary_table['Voc'] = voc_summary_table['Voc'].apply(
         lambda s: '{:2.2f}'.format(s))
 
