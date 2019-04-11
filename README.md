@@ -9,15 +9,28 @@ The pvtools package contains multiple different applications for photovoltaics. 
 
 # Files
 
-- **index.py** - Homepage for pvtools website.
+- **index.py** - Homepage for pvtools website. To run the app, run this script.
 - **string_length_calculator.py** - Page for calculating string length.
-- ...
+- 
+
+# Logging
+
+We take privacy seriously.
+
+We use coralogix to log basic usage information. This allows us to determine how many unique users have accessed the site.
+
+We also log each time the 'calculate' button is pressed, but do not record any metadata about the system design.  
+
 
 
 # Todo
 
 - Document! 
 - Check AWS bucket region to minimize latency.
+- Load default .npz file into github in order to speed up the default calculation slightly.
+- Remove mapbox access token from code.
+- Add click callback for map. "If I click the NREL location just outside of Golden, CO, I get the Lat and long from the blue dot. It did not autofill that onto the entry boxes. Was it supposed to?"
+- Add pvlib icon.
 
 # Install Notes
 

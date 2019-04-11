@@ -103,10 +103,13 @@ layout = dbc.Container([
     dbc.Collapse(
         dbc.Card(dbc.CardBody([
 
-            html.P("""The national electric code 2017 lists three different methods 
+            dcc.Markdown("""### National Electric Code Standards
+            
+            The national electric code 2017 lists three different methods 
             for determining the maximum string length in Article 690.7:
         
-            """),
+            """.replace('    ','')
+            ),
             html.Ol([
                 html.Li("""690.7(A)(1) Instruction in listing or labeling of module: 
                 The sum of the PV module-rated open-circuit voltage of the 
@@ -147,32 +150,59 @@ layout = dbc.Container([
 
     dbc.Collapse(
         dbc.Card(dbc.CardBody([
-            dcc.Markdown("""The simulation first acquires weather data from 
-            the National Solar Radiation Database (NSRDB) [1]. The data was 
-            sampled across the continental US at approximately a 0.125 degree 
-            grid, and at a lower resolution elsewhere. If a different weather 
-            data source is desired, it is necessary to use the open source 
-            associated python package [vocmax]( 
-            https://github.com/toddkarin/vocmax), which performs the same 
-            calculation as this web tool. If the particular weather data 
-            point is not on the map, please contact us and we will try to 
-            provide it. 
+            dcc.Markdown("""
+            ### Simulation methods
             
-            """),
-
-            dcc.Markdown("""The string voltage calculator uses the open 
+            The string voltage calculator uses the open 
             source [PVLIB](https://pvlib-python.readthedocs.io/en/latest/) 
             library to perform the calculation using the single diode model 
-            and the CEC parameterization. Module parameters are either taken 
-            from a standard database or entered manually. The calculation 
-            conservatively assumes that all diffuse irradiance is used (FD=1) 
-            and that there are no reflection losses from the top cell (
-            aoi_model='no_loss'). These two assumptions cause a small 
-            increase in the Voc and make the simulation more conservative. 
-            Specific details on the exact calculation method are described in [
-            vocmax](https://github.com/toddkarin/vocmax). 
-        
-            """),
+            and the De Soto parameterization [5]. Module parameters are 
+            either taken from a standard database or entered manually. The 
+            calculation conservatively assumes that all diffuse irradiance is 
+            used (FD=1) and that there are no reflection losses from the top 
+            cell (aoi_model='no_loss'). These two assumptions cause a small 
+            increase in Voc and make the simulation more conservative. 
+            Specific details on the exact calculation method are described in 
+            [vocmax](https://github.com/toddkarin/vocmax).  
+            
+            ### Weather Data
+            
+            Weather data was sourced from the National Solar Radiation 
+            Database (NSRDB) [1]. The data was sampled across the continental 
+            US at approximately a 0.125 degree grid, and at a lower 
+            resolution elsewhere. If a different weather data source is 
+            desired, it is necessary to use the open source associated python 
+            package [vocmax]( https://github.com/toddkarin/vocmax), 
+            which performs the same calculation as this web tool. If the 
+            particular weather data point is not on the map, please contact 
+            us and we will try to provide it. 
+            
+            ### Who we are
+            
+            We are a collection of national lab researchers funded under the 
+            [Durable module materials consortium (DuraMAT)](https://www.duramat.org/). 
+            
+            """.replace('    ','')
+            ),
+
+            dbc.Row([
+                dbc.Col(
+                    html.Img(
+                        src=app.get_asset_url('duramat_logo.png'),
+                        style={'height': 50})
+                ),
+                dbc.Col(
+                    html.Img(
+                        src=app.get_asset_url('pvlib_logo_horiz.png'),
+                        style={'height': 50})
+                ),
+                dbc.Col(
+                    html.Img(
+                        src=app.get_asset_url('LBL_Masterbrand_logo_with_Tagline-01.jpg'),
+                        style={'height': 50})
+                )
+            ],justify='center'
+            )
         ])), id="details-collapse"
     ),
 
@@ -200,7 +230,8 @@ layout = dbc.Container([
 
                 ],md=4),
                 dbc.Col([
-                    html.Div(id='location-map', children=[dcc.Graph(id='map')])
+                    html.Div(id='location-map', children=[dcc.Graph(id='map')]),
+                    html.P('Find location on map, enter coordinates manually.')
                 ],md=8)
             ]),
         ]),
@@ -211,8 +242,7 @@ layout = dbc.Container([
         dbc.CardBody([
             dbc.Label("""To select module parameters from a library of common 
             modules, select 'Library Lookup'. Or select 'manual entry' to 
-            enter the parameters for the  California Energy Commission (CEC) 
-            6-paramater model [4,5]. 
+            enter the parameters for the De Soto model [5]. 
             
             """),
             dbc.Tabs([
@@ -302,14 +332,14 @@ layout = dbc.Container([
                                 conditions, in ohms. 
                                 
                                 """),
-                                dbc.Label("""Adjust"""),
-                                dbc.Input(id='Adjust', value='16.5', type='text',
-                                          style={'max-width': 200}),
-                                dbc.FormText("""The adjustment to the 
-                                temperature coefficient for short circuit 
-                                current, in percent. 
-        
-                                """),
+                                # dbc.Label("""Adjust"""),
+                                # dbc.Input(id='Adjust', value='16.5', type='text',
+                                #           style={'max-width': 200}),
+                                # dbc.FormText("""The adjustment to the
+                                # temperature coefficient for short circuit
+                                # current, in percent.
+                                #
+                                # """),
                                 dbc.Label("""FD"""),
                                 dbc.Input(id='FD', value='1', type='text',
                                           style={'max-width': 200}),
@@ -658,7 +688,7 @@ layout = dbc.Container([
     the U.S. Department of Energy, Office of Energy Efficiency and Renewable 
     Energy, Solar Energy Technologies Office. Lawrence Berkeley National 
     Laboratory is funded by the DOE under award DE-AC02-05CH11231 """),
-    html.P('VOCMAX-DASH V-0.1'),
+    html.P('PVTOOLS Version ' + pvtoolslib.version),
     html.P('Author: Todd Karin')
 ],
     style={'columnCount': 1,
@@ -911,7 +941,7 @@ def update_Voco(racking_model):
 
 def make_iv_summary_layout(module_parameters):
 
-    extra_parameters = vocmaxlib.calculate_extra_module_parameters_cec(
+    extra_parameters = vocmaxlib.calculate_extra_module_parameters(
         module_parameters)
     extra_parameters['Value'] = extra_parameters['Value'].map(
         lambda x: '%2.3f' % x)
@@ -989,7 +1019,7 @@ def prepare_data(module_name):
     module_parameters['FD'] = 1
     module_parameters['name'] = module_name
     module_parameters['aoi_model'] = 'no_loss'
-
+    module_parameters['iv_model'] = 'desoto'
 
     info_df = pd.DataFrame.from_dict({
         'Parameter': list(module_parameters.keys())
@@ -1001,7 +1031,8 @@ def prepare_data(module_name):
             html.Summary('View database parameters for module'),
             dcc.Markdown("""For convenience, all parameters in the PVLIB CEC 
             database related to the selected module are shown in the table. 
-            However, only the following subset are used in the calculation: 
+            However, only the following subset are used in the calculation 
+            using the De Soto model [5]: 
     
             * **alpha_sc**. The short-circuit current temperature coefficient of 
             the module in units of A/C
@@ -1020,9 +1051,6 @@ def prepare_data(module_name):
             in ohms. 
     
             * **R_s**. The series resistance at reference conditions, in ohms.
-    
-            * **Adjust**. The adjustment to the temperature coefficient for 
-            short circuit current, in percent. 
     
             * **FD**. Fraction of diffuse irradiance arriving at the PV cell.
     
@@ -1052,12 +1080,12 @@ def prepare_data(module_name):
                   Input('I_o_ref', 'value'),
                   Input('R_sh_ref', 'value'),
                   Input('R_s', 'value'),
-                  Input('Adjust', 'value'),
+                  # Input('Adjust', 'value'),
                   Input('FD', 'value'),
                ]
               )
 def prepare_data(module_name_manual,
-                 alpha_sc, a_ref, I_L_ref, I_o_ref, R_sh_ref, R_s, Adjust, FD):
+                 alpha_sc, a_ref, I_L_ref, I_o_ref, R_sh_ref, R_s, FD):
     try:
         module_parameters = {
             'name': module_name_manual,
@@ -1067,7 +1095,7 @@ def prepare_data(module_name_manual,
             'I_o_ref': float(I_o_ref),
             'R_sh_ref': float(R_sh_ref),
             'R_s': float(R_s),
-            'Adjust': float(Adjust),
+            # 'Adjust': float(Adjust),
             'FD': float(FD)
         }
 
@@ -1114,6 +1142,38 @@ def prepare_data(categ):
             id='graphs')
 
 
+def get_weather_data(lat,lon):
+    """
+    Get the weather data and info file. If the default location is chosen,
+    then return file from current directory for speed.
+
+
+    Parameters
+    ----------
+    lat
+    lon
+
+    Returns
+    -------
+
+    """
+
+    # Get weather
+    filedata = pvtoolslib.get_s3_filename_df()
+    filedata_closest = nsrdbtools.find_closest_datafiles(float(lat), float(lon),
+                                                         filedata)
+
+    filename = filedata_closest['filename'].iloc[0]
+
+    if filename=='124250_37.93_-122.3.npz':
+        weather, info = pvtoolslib.get_local_weather_data(filename)
+    else:
+        weather, info = pvtoolslib.get_s3_weather_data(filename)
+
+    return weather, info
+
+
+
 
 @app.callback(Output('graphs', 'children'),
               [Input('submit-button', 'n_clicks')
@@ -1129,7 +1189,7 @@ def prepare_data(categ):
                 State('I_o_ref','value'),
                 State('R_sh_ref','value'),
                 State('R_s','value'),
-                State('Adjust','value'),
+                # State('Adjust','value'),
                 State('FD','value'),
                 State('thermal_model_input_type', 'active_tab'),
                 State('racking_model', 'value'),
@@ -1148,7 +1208,7 @@ def prepare_data(categ):
                ]
               )
 def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name, module_name_manual,
-                 alpha_sc, a_ref, I_L_ref, I_o_ref, R_sh_ref, R_s, Adjust, FD,
+                 alpha_sc, a_ref, I_L_ref, I_o_ref, R_sh_ref, R_s, FD,
                  thermal_model_input_type, racking_model, a, b, DT,
                  mount_type, surface_tilt, surface_azimuth,
                  axis_tilt, axis_azimuth, max_angle, backtrack, ground_coverate_ratio,
@@ -1204,12 +1264,6 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         return []
 
 
-    # Get weather
-
-    filedata = pvtoolslib.get_s3_filename_df()
-    filedata_closest = nsrdbtools.find_closest_datafiles(float(lat), float(lon),
-                                                         filedata)
-
 
     all_params = {
         'lat': lat,
@@ -1223,7 +1277,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         'I_o_ref': I_o_ref,
         'R_sh_ref': R_sh_ref,
         'R_s': R_s,
-        'Adjust': Adjust,
+        # 'Adjust': Adjust,
         'FD': FD,
         'thermal_model_input_type': thermal_model_input_type,
         'racking_model': racking_model,
@@ -1250,7 +1304,8 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     request_str = request_str.replace(' ','_')
 
 
-    is_default_calculation = request_str == '?lat=37.88&lon=-122.25&module_parameter_input_type=lookup&module_name=1Soltech_1STH_215_P&module_name_manual=Custom_Module&alpha_sc=0.007997&a_ref=1.6413&I_L_ref=7.843&I_o_ref=1.936e-09&R_sh_ref=839.4&R_s=0.359&Adjust=16.5&FD=1&thermal_model_input_type=lookup&racking_model=open_rack_cell_glassback&a=-3.47&b=-0.0594&DT=3&mount_type=fixed_tilt&surface_tilt=30&surface_azimuth=180&axis_tilt=0&axis_azimuth=0&max_angle=90&backtrack=True&ground_coverage_ratio=0.286&max_string_voltage=1500'
+
+    is_default_calculation = request_str == '?lat=37.88&lon=-122.25&module_parameter_input_type=lookup&module_name=1Soltech_1STH_215_P&module_name_manual=Custom_Module&alpha_sc=0.007997&a_ref=1.6413&I_L_ref=7.843&I_o_ref=1.936e-09&R_sh_ref=839.4&R_s=0.359&FD=1&thermal_model_input_type=lookup&racking_model=open_rack_cell_glassback&a=-3.47&b=-0.0594&DT=3&mount_type=fixed_tilt&surface_tilt=30&surface_azimuth=180&axis_tilt=0&axis_azimuth=0&max_angle=90&backtrack=True&ground_coverage_ratio=0.286&max_string_voltage=1500'
     print('String Voltage Calculator:Calculate started:default=' + str(is_default_calculation))
     # print(request_str)
 
@@ -1263,6 +1318,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         module_parameters['FD'] = 1
         module_parameters['name'] = module_name
         module_parameters['aoi_model'] = 'no_loss'
+        module_parameters['iv_model'] = 'desoto'
     elif module_parameter_input_type=='manual':
         module_parameters = {
             'name': module_name_manual,
@@ -1272,8 +1328,9 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
             'I_o_ref': float(I_o_ref),
             'R_sh_ref': float(R_sh_ref),
             'R_s': float(R_s),
-            'Adjust': float(Adjust),
-            'FD': float(FD)
+            # 'Adjust': float(Adjust),
+            'FD': float(FD),
+            'iv_model': 'desoto'
         }
     else:
         print('input type not understood.')
@@ -1311,8 +1368,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
 
 
     # print('Getting weather data...')
-    weather, info = pvtoolslib.get_s3_weather_data(
-        filedata_closest['filename'].iloc[0])
+    weather, info = get_weather_data(lat,lon)
 
     df = vocmaxlib.simulate_system(weather, info,module_parameters,
                                    racking_parameters, thermal_model)
@@ -1717,7 +1773,7 @@ def download_simulation_data():
             'I_o_ref': float(p['I_o_ref']),
             'R_sh_ref': float(p['R_sh_ref']),
             'R_s': float(p['R_s']),
-            'Adjust': float(p['Adjust']),
+            # 'Adjust': float(p['Adjust']),
             'FD': float(p['FD'])
         }
     else:
