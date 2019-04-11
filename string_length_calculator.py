@@ -62,7 +62,7 @@ layout = dbc.Container([
     dcc.Markdown("""This tool predicts the maximum open circuit voltage (Voc) 
     expected to occur for modules in a solar installation at a particular 
     location. One application of this tool is to determine optimal string 
-    sizes in accordance with national electric code (NEC) standards.
+    sizes in accordance with National Electric Code (NEC) standards.
 
     """),
 
@@ -105,7 +105,7 @@ layout = dbc.Container([
 
             dcc.Markdown("""### National Electric Code Standards
             
-            The national electric code 2017 lists three different methods 
+            The National Electric Code 2017 lists three different methods 
             for determining the maximum string length in Article 690.7:
         
             """.replace('    ','')
@@ -151,20 +151,13 @@ layout = dbc.Container([
     dbc.Collapse(
         dbc.Card(dbc.CardBody([
             dcc.Markdown("""
-            ### Simulation methods
             
-            The string voltage calculator uses the open 
-            source [PVLIB](https://pvlib-python.readthedocs.io/en/latest/) 
-            library to perform the calculation using the single diode model 
-            and the De Soto parameterization [5]. Module parameters are 
-            either taken from a standard database or entered manually. The 
-            calculation conservatively assumes that all diffuse irradiance is 
-            used (FD=1) and that there are no reflection losses from the top 
-            cell (aoi_model='no_loss'). These two assumptions cause a small 
-            increase in Voc and make the simulation more conservative. 
-            Specific details on the exact calculation method are described in 
-            [vocmax](https://github.com/toddkarin/vocmax).  
+            The steps in the calculation are:
             
+            - Load historical weather data for a location.
+            - Model Voc for user-specified module technology, installation 
+            parameters and weather data.
+
             ### Weather Data
             
             Weather data was sourced from the National Solar Radiation 
@@ -175,8 +168,23 @@ layout = dbc.Container([
             package [vocmax]( https://github.com/toddkarin/vocmax), 
             which performs the same calculation as this web tool. If the 
             particular weather data point is not on the map, please contact 
-            us and we will try to provide it. 
+            us at pvtools@gmail.com and we will try to provide it. 
             
+            ### Simulation methods
+            
+            The string voltage calculator uses the open 
+            source [PVLIB](https://pvlib-python.readthedocs.io/en/latest/) 
+            library to perform the calculation using the single diode model 
+            and the De Soto parameterization [5]. Module parameters are 
+            either taken from the CEC database or entered manually. The 
+            calculation conservatively assumes that all diffuse irradiance is 
+            used (FD=1) and that there are no reflection losses from the top 
+            cell (aoi_model='no_loss'). These two assumptions cause a small 
+            increase in Voc and make the simulation more conservative. 
+            Specific details on the exact calculation method are described in 
+            [vocmax](https://github.com/toddkarin/vocmax).  
+            
+                        
             ### Who we are
             
             We are a collection of national lab researchers funded under the 
@@ -209,6 +217,7 @@ layout = dbc.Container([
 
 
     # html.H2('Simulation Input'),
+    html.P(''),
     html.H2('Step 1: Provide location of installation'),
     dbc.Card([
         dbc.CardHeader('Choose Location'),
@@ -224,7 +233,7 @@ layout = dbc.Container([
                     html.P(''),
                     html.Div([
                     dbc.Button(id='get-weather', n_clicks=0,
-                                           children='Get Weather Data'),
+                                           children='Show nearest location on map'),
                         ]),
                     html.Div(id='weather_data_download'),
 
@@ -236,6 +245,7 @@ layout = dbc.Container([
             ]),
         ]),
     ]),
+    html.P(''),
     html.H2('Step 2: Provide details on module and installation type'),
     dbc.Card([
         dbc.CardHeader('Module Parameters'),
@@ -250,7 +260,7 @@ layout = dbc.Container([
                     dbc.Card(
                         dbc.CardBody(
                             [
-                                dcc.Markdown("""**Module name** (from CEC database).
+                                dcc.Markdown("""Module name (from CEC database).
                                 
                                 """),
                                 dcc.Dropdown(
@@ -280,6 +290,7 @@ layout = dbc.Container([
                                           type='text',
                                           style={'max-width': 200}),
                                 dbc.FormText("""Module name for records"""),
+                                html.P(''),
                                 dbc.Label("""alpha_sc"""),
                                 dbc.Input(id='alpha_sc', value='0.007997', type='text',
                                           style={'max-width': 200}),
@@ -289,6 +300,7 @@ layout = dbc.Container([
         
                                 """
                                 ),
+                                html.P(''),
                                 dbc.Label("""a_ref"""),
                                 dbc.Input(id='a_ref', value='1.6413', type='text',
                                           style={'max-width': 200}),
@@ -298,6 +310,7 @@ layout = dbc.Container([
                                 voltage at reference conditions, in units of V. 
         
                                             """),
+                                html.P(''),
                                 dbc.Label("""I_L_ref"""),
                                 dbc.Input(id='I_L_ref', value='7.843', type='text',
                                           style={'max-width': 200}),
@@ -306,14 +319,14 @@ layout = dbc.Container([
         
                                             
                                 """),
-
+                                html.P(''),
                                 dbc.Label("""I_o_ref"""),
                                 dbc.Input(id='I_o_ref', value='1.936e-09', type='text',
                                           style={'max-width': 200}),
                                 dbc.FormText("""The dark or diode reverse 
                                 saturation current at reference conditions, in amperes. 
                                 """),
-
+                                html.P(''),
                                 dbc.Label("""R_sh_ref
         
                                             """),
@@ -324,7 +337,7 @@ layout = dbc.Container([
                                 reference conditions, in ohms. 
                                  
                                 """),
-
+                                html.P(''),
                                 dbc.Label("""R_s"""),
                                 dbc.Input(id='R_s', value='0.359', type='text',
                                           style={'max-width': 200}),
@@ -332,6 +345,7 @@ layout = dbc.Container([
                                 conditions, in ohms. 
                                 
                                 """),
+                                html.P(''),
                                 # dbc.Label("""Adjust"""),
                                 # dbc.Input(id='Adjust', value='16.5', type='text',
                                 #           style={'max-width': 200}),
@@ -396,7 +410,7 @@ layout = dbc.Container([
                     dbc.Card(
                         dbc.CardBody(
                             [
-                                dcc.Markdown('**Racking Model**'),
+                                dcc.Markdown('Racking Model'),
                                 dcc.Dropdown(
                                  id='racking_model',
                                  options=[
@@ -439,6 +453,7 @@ layout = dbc.Container([
                                 
                                 
                                 """),
+                                html.P(''),
                                 dbc.Label("""b"""),
                                 dbc.Input(id='b', value='-0.0594', type='text',
                                           style={'max-width': 200}),
@@ -447,6 +462,7 @@ layout = dbc.Container([
                                 drops as wind speed increases (s/m) 
                                 
                                 """),
+                                html.P(''),
                                 dbc.Label("""DT"""),
                                 dbc.Input(id='DT', value='3', type='text',
                                           style={'max-width': 200}),
@@ -555,7 +571,7 @@ layout = dbc.Container([
             dcc.Markdown("""Set the design max string voltage for the PV system. 
             
             """),
-            dcc.Markdown('**Max string voltage (V)**'),
+            dcc.Markdown('Max string voltage (V)'),
             dbc.Input(id='max_string_voltage',
                       value='1500',
                       type='text',
@@ -563,7 +579,7 @@ layout = dbc.Container([
             dbc.FormText('Maximum string voltage for calculating string length'),
             ])
         ]),
-
+    html.P(''),
     html.H2('Final Step: Run Calculation'),
     dbc.Card([
         dbc.CardHeader('Calculation'),
@@ -588,6 +604,7 @@ layout = dbc.Container([
     #               values=[]
     #               ),
 
+    html.P(''),
     html.H2('Results'),
     html.Div(id='load'),
     html.Div(id='graphs', style={'display': 'none'}),
@@ -604,6 +621,7 @@ layout = dbc.Container([
     #     value=5,
     # ),
     html.Div(id='voc_list'),
+    html.P(''),
     html.H2('Frequently Asked Questions'),
     html.Details([
         html.Summary(
@@ -659,7 +677,7 @@ layout = dbc.Container([
 
         """, style={'marginLeft': 50}),
     ]),
-
+    html.P(''),
     html.H2('References'),
     html.P("""
         [1]  M. Sengupta, Y. Xie, A. Lopez, A. Habte, G. Maclaurin, and J. 
@@ -742,6 +760,10 @@ def update_output_div( lat, lon):
      State('lon', 'value')]
 )
 def update_output_div(n_clicks, lat, lon):
+
+    # if n_clicks==0:
+    #     return ''
+
     # print('Finding database location')
     filedata = pvtoolslib.get_s3_filename_df()
     filedata_closest = nsrdbtools.find_closest_datafiles(float(lat), float(lon),
@@ -1095,12 +1117,13 @@ def prepare_data(module_name_manual,
             'I_o_ref': float(I_o_ref),
             'R_sh_ref': float(R_sh_ref),
             'R_s': float(R_s),
+            'iv_model':'desoto',
             # 'Adjust': float(Adjust),
             'FD': float(FD)
         }
 
         return make_iv_summary_layout(module_parameters)
-
+    #
     except:
         return [
             html.P('Input values invalid.')
@@ -1381,12 +1404,14 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     voc_summary_table = voc_summary.rename(index=str,columns={'v_oc':'Voc',
                                                      'max_string_voltage':'Max String Voltage',
                                                      'string_length':'String Length',
-                                                     'long_note':'Note'
+                                                     'short_note':'Note'
                                                      })
     voc_summary_table['Note'] = voc_summary_table['Note'].apply(
         lambda s : s.replace('<br>','.  '))
     voc_summary_table['Voc'] = voc_summary_table['Voc'].apply(
         lambda s: '{:2.2f}'.format(s))
+
+    voc_summary_table = voc_summary_table[['Voc','Max String Voltage','String Length','Note']]
 
     summary_text = vocmaxlib.make_simulation_summary(df, info,
                                                  module_parameters,
@@ -1524,82 +1549,84 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                 )
             }
         ),
-        dbc.Table.from_dataframe(voc_summary_table,
-                                 striped=False,
-                                 bordered=True,
-                                 hover=True,
-                                 index=True,
-                                 size='sm',
-                                 style={'font-size': '0.8rem'}),
-        html.Details([
-            html.Summary('Details on key names'),
-            html.P("""The string voltage calculation provides several standard 
-             values for designing string lengths. The values are: 
+        html.Div([
+            dbc.Table.from_dataframe(voc_summary_table,
+                                     striped=False,
+                                     bordered=True,
+                                     hover=True,
+                                     index=True,
+                                     size='sm',
+                                     style={'font-size': '0.8rem'}),
+            html.Details([
+                html.Summary('Details on index names'),
+                html.P("""The string voltage calculation provides several standard 
+                 values for designing string lengths. The values are: 
+    
+                 """),
+                html.Div([
+                    html.Ul([
+                        html.Li(
+                            dcc.Markdown(
+                                """**P99.5** is the 99.5 percentile Voc value over the 
+                                simulation time. Statistically Voc will exceed this value 
+                                only 0.5% of the year. Suppose that open circuit 
+                                conditions occur 1% of the time randomly. In this case 
+                                the probability that the weather and system design 
+                                maintain the system voltage under the standard limit is 
+                                99.995%, i.e. max system voltage would statistically be 
+                                exceeded for 26 minutes per year. 
+       
+                                """
+                            )),
+                        html.Li(
+                            dcc.Markdown(
+                                """**Hist** is the historical maximum Voc over the {:.0f} 
+                                years of simulation. 
+    
+                                """.format(info['timedelta_in_years'])
+                            )),
+                        html.Li(
+                            dcc.Markdown(
+                                """**Norm_P99.5** is the 99.5 percentile Voc value 
+                                when assuming that the PV array is always oriented 
+                                normal to the sun. This value can be easily computed 
+                                given weather data (DNI + DHI) and the module 
+                                parameters since angle-of-incidence calculations are 
+                                avoided. This would also be the value to use in the 
+                                case of two-axis trackers. 
+    
+                                """.format(info['timedelta_in_years'])
+                            )),
+                        html.Li(
+                            dcc.Markdown(
+                                """**Trad** is the traditional value used for maximum 
+                                Voc. This is found using the mean minimum yearly dry bulb 
+                                temperature (i.e. find the minimum temperature in each 
+                                year and take the mean of those values). The Voc is 
+                                calculated assuming 1 sun irradiance (1000 W/m^2), 
+                                the mean minimum yearly dry bulb temperature and the 
+                                module paramaeters. 
+       
+                                """
+                            )),
+                        html.Li(
+                            dcc.Markdown(
+                                """**Day** is similar to the trad value, except the 
+                                mean minimum yearly daytime dry bulb temperature is 
+                                used as the cell temperature for calculating Voc. 
+                                Daytime is defined as GHI greater than 150 W/m^2. The 
+                                Voc is calculated assuming 1 sun irradiance (1000 
+                                W/m^2), the mean minimum yearly daytime dry bulb 
+                                temperature and the module paramaeters. 
+    
+                                """
+                            )),
 
-             """),
-            html.Div([
-                html.Ul([
-                    html.Li(
-                        dcc.Markdown(
-                            """**P99.5** is the 99.5 percentile Voc value over the 
-                            simulation time. Statistically Voc will exceed this value 
-                            only 0.5% of the year. Suppose that open circuit 
-                            conditions occur 1% of the time randomly. In this case 
-                            the probability that the weather and system design 
-                            maintain the system voltage under the standard limit is 
-                            99.995%, i.e. max system voltage would statistically be 
-                            exceeded for 26 minutes per year. 
-   
-                            """
-                        )),
-                    html.Li(
-                        dcc.Markdown(
-                            """**Hist** is the historical maximum Voc over the {:.0f} 
-                            years of simulation. 
+                    ])
 
-                            """.format(info['timedelta_in_years'])
-                        )),
-                    html.Li(
-                        dcc.Markdown(
-                            """**Norm_P99.5** is the 99.5 percentile Voc value 
-                            when assuming that the PV array is always oriented 
-                            normal to the sun. This value can be easily computed 
-                            given weather data (DNI + DHI) and the module 
-                            parameters since angle-of-incidence calculations are 
-                            avoided. This would also be the value to use in the 
-                            case of two-axis trackers. 
-
-                            """.format(info['timedelta_in_years'])
-                        )),
-                    html.Li(
-                        dcc.Markdown(
-                            """**Trad** is the traditional value used for maximum 
-                            Voc. This is found using the mean minimum yearly dry bulb 
-                            temperature (i.e. find the minimum temperature in each 
-                            year and take the mean of those values). The Voc is 
-                            calculated assuming 1 sun irradiance (1000 W/m^2), 
-                            the mean minimum yearly dry bulb temperature and the 
-                            module paramaeters. 
-   
-                            """
-                        )),
-                    html.Li(
-                        dcc.Markdown(
-                            """**Day** is similar to the trad value, except the 
-                            mean minimum yearly daytime dry bulb temperature is 
-                            used as the cell temperature for calculating Voc. 
-                            Daytime is defined as GHI greater than 150 W/m^2. The 
-                            Voc is calculated assuming 1 sun irradiance (1000 
-                            W/m^2), the mean minimum yearly daytime dry bulb 
-                            temperature and the module paramaeters. 
-
-                            """
-                        )),
-
-                ])
-
-            ], style={'marginLeft': 50}),
-        ]),
+                ], style={'marginLeft': 50}),
+            ]),
+        ],style={'margin-bottom':30}),
         html.P("""Figure 2 shows a histogram of the air and cell temperature. 
         A spike at 0 C is sometimes observed and explained below under 
         frequently asked questions. 
@@ -1622,7 +1649,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                     ),
                     xaxis={'title': 'Temperature (C)'},
                     yaxis={'title': 'hours/year'},
-                    # margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
+                    margin={'l': 60, 'b': 120, 't': 30, 'r': 60},
                     hovermode='closest',
                     # annotations=[
                     #     dict(
@@ -1684,7 +1711,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                     ),
                     xaxis={'title': 'Date'},
                     yaxis={'title': 'Value'},
-                    # margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
+                    margin={'l': 60, 'b': 120, 't': 30, 'r': 60},
                     hovermode='closest',
                     annotations=[
                         dict(
@@ -1731,12 +1758,13 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                    href=summary_text_for_download,
                    target='_blank'),
         ]),
-        html.Div([
+        html.P([
             html.A('Download full simulation data as csv',
                id='download-link',
                download='raw_data.csv',
                href='/dash/download_simulation_data' + request_str,
                target='_blank'),
+            ' (10-20 seconds)'
             ]),
     ]
 

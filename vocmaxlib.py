@@ -373,8 +373,21 @@ def make_voc_summary(df,module_parameters,max_string_voltage=1500):
                       "Norm_P99.5 Voc: {:.3f}<br>".format(voc_values['Norm_P99.5']) +\
                       "Maximum String Length: {:.0f}".format(voc_summary['string_length']['Norm_P99.5'])
     }
+    short_note = {
+        'P99.5': "Recommended 690.7(A)(3) value for string length.",
+
+        'Hist': 'Conservative 690.7(A)(3) value for string length.',
+
+        'Day':  'mean yearly minimum daytime (GHI>150 W/m^2) dry bulb temperature: {:.1f} C.<br>'.format(mean_yearly_min_day_temp) +\
+                'Recommended 690.7(A)(1) Value',
+
+        'Trad': 'mean yearly minimum dry bulb temperature: {:.1f} C.<br>'.format(mean_yearly_min_temp),
+
+        'Norm_P99.5': ""
+    }
 
     voc_summary['long_note'] = voc_summary.index.map(long_note)
+    voc_summary['short_note'] = voc_summary.index.map(short_note)
 
     return voc_summary
 

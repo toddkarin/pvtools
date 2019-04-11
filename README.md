@@ -25,7 +25,9 @@ We also log each time the 'calculate' button is pressed, but do not record any m
 
 # Todo
 
+- Add pvtools@gmail.com contact.
 - Document! 
+- make input fields more obvious.
 - Check AWS bucket region to minimize latency.
 - Load default .npz file into github in order to speed up the default calculation slightly.
 - Remove mapbox access token from code.
