@@ -1292,7 +1292,8 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         'max_angle': max_angle,
         'backtrack': str(backtrack),
         'ground_coverage_ratio': ground_coverate_ratio,
-        'max_string_voltage': max_string_voltage
+        'max_string_voltage': max_string_voltage,
+        'iv_model': 'desoto'
     }
 
 
@@ -1304,8 +1305,8 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     request_str = request_str.replace(' ','_')
 
 
-
-    is_default_calculation = request_str == '?lat=37.88&lon=-122.25&module_parameter_input_type=lookup&module_name=1Soltech_1STH_215_P&module_name_manual=Custom_Module&alpha_sc=0.007997&a_ref=1.6413&I_L_ref=7.843&I_o_ref=1.936e-09&R_sh_ref=839.4&R_s=0.359&FD=1&thermal_model_input_type=lookup&racking_model=open_rack_cell_glassback&a=-3.47&b=-0.0594&DT=3&mount_type=fixed_tilt&surface_tilt=30&surface_azimuth=180&axis_tilt=0&axis_azimuth=0&max_angle=90&backtrack=True&ground_coverage_ratio=0.286&max_string_voltage=1500'
+    # print(request_str)
+    is_default_calculation = request_str == '?lat=37.88&lon=-122.25&module_parameter_input_type=lookup&module_name=1Soltech_1STH_215_P&module_name_manual=Custom_Module&alpha_sc=0.007997&a_ref=1.6413&I_L_ref=7.843&I_o_ref=1.936e-09&R_sh_ref=839.4&R_s=0.359&FD=1&thermal_model_input_type=lookup&racking_model=open_rack_cell_glassback&a=-3.47&b=-0.0594&DT=3&mount_type=fixed_tilt&surface_tilt=30&surface_azimuth=180&axis_tilt=0&axis_azimuth=0&max_angle=90&backtrack=True&ground_coverage_ratio=0.286&max_string_voltage=1500&iv_model=desoto'
     print('String Voltage Calculator:Calculate started:default=' + str(is_default_calculation))
     # print(request_str)
 
@@ -1764,6 +1765,7 @@ def download_simulation_data():
         module_parameters['FD'] = 1
         module_parameters['name'] = p['module_name']
         module_parameters['aoi_model'] = 'no_loss'
+        module_parameters['iv_model'] = p['iv_model']
     elif p['module_parameter_input_type']=='manual':
         module_parameters = {
             'name': p['module_name_manual'],
@@ -1773,6 +1775,7 @@ def download_simulation_data():
             'I_o_ref': float(p['I_o_ref']),
             'R_sh_ref': float(p['R_sh_ref']),
             'R_s': float(p['R_s']),
+            'iv_model': p['iv_model'],
             # 'Adjust': float(p['Adjust']),
             'FD': float(p['FD'])
         }
