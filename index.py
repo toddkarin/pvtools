@@ -1,4 +1,10 @@
+"""
+Main page for pvtools website. Run this script
 
+04/09/2019
+toddkarin
+
+"""
 
 import dash
 import dash_core_components as dcc
@@ -72,8 +78,6 @@ navbar = dbc.NavbarSimple(
     brand_href="/",
     sticky="top",
 )
-
-
 
 
 

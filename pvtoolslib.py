@@ -16,6 +16,7 @@ import glob
 #
 
 version = '1.0.0'
+contact_email = 'pvtools.lbl@gmail.com'
 
 # sandia_modules = pvlib.pvsystem.retrieve_sam('SandiaMod')
 

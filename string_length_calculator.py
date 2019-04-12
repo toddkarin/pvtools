@@ -48,7 +48,7 @@ from app import app
 layout = dbc.Container([
     html.Hr(),
     html.Div([
-        html.H1("Photovoltaic Maximum Open Circuit Voltage"),
+        html.H1("Photovoltaic String Length Calculator"),
     ], style={
         # 'background-color': 'lightblue',
         'width': '100%',
@@ -152,11 +152,16 @@ layout = dbc.Container([
         dbc.Card(dbc.CardBody([
             dcc.Markdown("""
             
-            The steps in the calculation are:
+            ### Summary
+            
+            The calculation proceeds with the following steps:
             
             - Load historical weather data for a location.
+            - Provide details on module and installation type
+            - Set maximum allowable string voltage
             - Model Voc for user-specified module technology, installation 
             parameters and weather data.
+            - Analyze results, providing a standard value for string length.
 
             ### Weather Data
             
@@ -168,7 +173,7 @@ layout = dbc.Container([
             package [vocmax]( https://github.com/toddkarin/vocmax), 
             which performs the same calculation as this web tool. If the 
             particular weather data point is not on the map, please contact 
-            us at pvtools@gmail.com and we will try to provide it. 
+            us at {} and we will try to provide it. 
             
             ### Simulation methods
             
@@ -190,7 +195,7 @@ layout = dbc.Container([
             We are a collection of national lab researchers funded under the 
             [Durable module materials consortium (DuraMAT)](https://www.duramat.org/). 
             
-            """.replace('    ','')
+            """.format(pvtoolslib.contact_email).replace('    ','')
             ),
 
             dbc.Row([
@@ -707,7 +712,8 @@ layout = dbc.Container([
     Energy, Solar Energy Technologies Office. Lawrence Berkeley National 
     Laboratory is funded by the DOE under award DE-AC02-05CH11231 """),
     html.P('PVTOOLS Version ' + pvtoolslib.version),
-    html.P('Author: Todd Karin')
+    html.P('Author: Todd Karin'),
+    html.P('Contact: ' + pvtoolslib.contact_email)
 ],
     style={'columnCount': 1,
            'maxWidth': 1000,
