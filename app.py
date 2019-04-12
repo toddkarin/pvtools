@@ -18,7 +18,7 @@ app.config['suppress_callback_exceptions']=True
 app.title = 'PVTOOLS'
 
 # For google analytics to work:
-app.scripts.config.serve_locally = True
+app.scripts.config.serve_locally = False
 
 #
 # app.config.suppress_callback_exceptions = True
