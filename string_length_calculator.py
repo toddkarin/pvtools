@@ -64,7 +64,11 @@ layout = dbc.Container([
     location. One application of this tool is to determine optimal string 
     sizes in accordance with National Electric Code (NEC) standards.
 
-    """),
+    **We would highly appreciate any feedback** (praise, bug reports, 
+    suggestions, etc.). Please contact us at pvtools.lbl@gmail.com. 
+    
+    """.replace('    ','')
+    ),
 
     dbc.Row([
         dbc.Col(
