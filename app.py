@@ -19,6 +19,12 @@ app.title = 'PVTOOLS'
 
 # For google analytics to work:
 app.scripts.config.serve_locally = False
+# app.scripts.append_script({
+#     'external_url': 'https://cdn.jsdelivr.net/gh/lppier/lppier.github.io/async_src.js'
+# })
+# app.scripts.append_script({
+#     'external_url': 'https://cdn.jsdelivr.net/gh/lppier/lppier.github.io/gtag.js'
+# })
 
 #
 # app.config.suppress_callback_exceptions = True
