@@ -16,6 +16,10 @@ server.secret_key = os.environ.get('secret_key', 'secret')
 # Allow to set callbacks before setting layout:
 app.config['suppress_callback_exceptions']=True
 app.title = 'PVTOOLS'
+
+# For google analytics to work:
+app.scripts.config.serve_locally = True
+
 #
 # app.config.suppress_callback_exceptions = True
 # # app.config.suppress_callback_exceptions = False
