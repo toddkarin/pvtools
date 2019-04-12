@@ -15,7 +15,7 @@ server.secret_key = os.environ.get('secret_key', 'secret')
 
 # Allow to set callbacks before setting layout:
 app.config['suppress_callback_exceptions']=True
-
+app.title = 'PVTOOLS'
 #
 # app.config.suppress_callback_exceptions = True
 # # app.config.suppress_callback_exceptions = False

@@ -976,7 +976,7 @@ def make_iv_summary_layout(module_parameters):
     extra_parameters = vocmaxlib.calculate_extra_module_parameters(
         module_parameters)
     extra_parameters['Value'] = extra_parameters['Value'].map(
-        lambda x: '%2.3f' % x)
+        lambda x: '%2.3g' % x)
 
     # Calculate some IV curves.
     irradiance_list = [1000, 800, 600, 400, 200]
