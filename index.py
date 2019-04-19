@@ -30,7 +30,7 @@ from dash.dependencies import Input, Output, State
 
 from app import app
 
-# Line is important for Heroku.
+# Line is important for Heroku.w
 server = app.server
 
 # Load layouts for different pages
@@ -46,14 +46,20 @@ app.layout = html.Div([
 header = dbc.Container([
     dbc.Row([
         dbc.Col([
-            html.Img(
-                src=app.get_asset_url('LBL_Masterbrand_logo_with_Tagline-01.jpg'),
-                style={'height': 50})
+            html.A(
+                html.Img(
+                    src=app.get_asset_url('LBL_Masterbrand_logo_with_Tagline-01.jpg'),
+                    style={'height': 50}),
+                href="https://www.lbl.gov/"
+            )
             ],width=4),
         dbc.Col([
-            html.Img(
-                src=app.get_asset_url('duramat_logo.png'),
-                style={'height': 50})
+            html.A(
+                html.Img(
+                    src=app.get_asset_url('duramat_logo.png'),
+                    style={'height': 50}),
+                href="https://www.duramat.org/"
+            )
             ],width=4)
 
         ],justify='between')
