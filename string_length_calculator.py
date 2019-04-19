@@ -1182,7 +1182,7 @@ def get_weather_data(lat,lon):
     if filename=='124250_37.93_-122.3.npz':
         weather, info = nsrdbtools.get_local_weather_data(filename)
     else:
-        weather, info = nsrdbtools.get_s3_weather_data(filename)
+        weather, info = pvtoolslib.get_s3_weather_data(filename)
 
     return weather, info
 
@@ -1838,7 +1838,7 @@ def download_simulation_data():
 
     max_string_voltage = float(p['max_string_voltage'])
 
-    print('String Voltage Calculator:Input processed:')
+    # print('String Voltage Calculator:Input processed:')
 
 
     weather, info = pvtoolslib.get_s3_weather_data(
@@ -1848,7 +1848,7 @@ def download_simulation_data():
     df = vocmaxlib.simulate_system(weather, info,module,
                                    racking_parameters, thermal_model)
 
-    print('String Voltage Calculator:Simulation complete:')
+    # print('String Voltage Calculator:Simulation complete:')
     # df_temp = pd.DataFrame(info,index=[0])
     # df_temp = df.copy()
 
@@ -1865,7 +1865,7 @@ def download_simulation_data():
     # df_temp['aoi'] = df_temp['aoi'].map(lambda x: '%3.0f' % x)
     df['effective_irradiance'] = df['effective_irradiance'].map(lambda x: '%.0f' % x)
 
-    print('String Voltage Calculator:df made:')
+    # print('String Voltage Calculator:df made:')
 
     #Create DF
     # d = {'col1': [1, 2], 'col2': [3, 4]}
