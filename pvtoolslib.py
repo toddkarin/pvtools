@@ -1,6 +1,6 @@
 import numpy as np
 import pvlib
-# import nsrdbtools
+import nsrdbtools
 # import socket
 import boto3
 import botocore
@@ -15,7 +15,7 @@ import glob
 #     import pickle
 #
 
-version = '1.0.0'
+version = '1.0.1'
 contact_email = 'pvtools.lbl@gmail.com'
 
 # sandia_modules = pvlib.pvsystem.retrieve_sam('SandiaMod')
@@ -46,54 +46,6 @@ def get_s3_files():
         files.append(item.key)
 
     return files
-
-def build_filename_list(base_dir):
-    """
-    Build filename list from directory, not working yet.
-
-    Returns
-    -------
-
-    """
-
-    location_id = []
-    lat = []
-    lon = []
-
-    print('Getting s3 files...')
-    # filename = get_s3_files()
-    base_dir = '/Users/toddkarin/Documents/NSRDB_compressed/*'
-    filename = glob.glob(base_dir)
-
-    print(filename)
-    print('done.')
-
-    # Extract location id, lat and lon.
-    for key in filename:
-        if key.endswith('.npz'):
-            filename_parts = key.split('_')
-
-            location_id.append(int(filename_parts[0]))
-            lat.append(float(filename_parts[1]))
-            lon.append(float(filename_parts[2][0:-4]))
-
-
-    # Create a DataFrame
-    filedata = pd.DataFrame.from_dict({
-        'location_id': location_id,
-        'lat': lat,
-        'lon': lon,
-        'filename': filename,
-    })
-
-    # Redefine the index.
-    filedata.index = range(filedata.__len__())
-
-    # Save to file
-    filedata.to_pickle('s3_filedata.pkl')
-
-    return filedata
-
 
 
 def build_s3_filename_list():
@@ -152,7 +104,8 @@ def get_s3_filename_df():
     """
     return pd.read_pickle('s3_filedata.pkl')
 
-#
+
+
 # def build_nsrdb_database():
 #
 #
@@ -248,25 +201,6 @@ def get_s3_npz(filename):
     return data
 
 
-def load_npz(filename):
-    """
-    Load npz file from a local file
-
-    Parameters
-    ----------
-    filename
-
-    Returns
-    -------
-
-    """
-    #
-    data = {}
-    with np.load(filename) as arr:
-        for var in list(arr.keys()):
-            data[var] = arr[var]
-    return data
-
 
 
 def get_s3_weather_data(filename):
@@ -275,68 +209,8 @@ def get_s3_weather_data(filename):
 
     info = get_s3_npz(filename)
 
-    return build_weather_info(info)
+    return nsrdbtools.build_weather_info(info)
 
-def get_local_weather_data(filename):
-
-
-    data = load_npz(filename)
-    return build_weather_info(data)
-
-
-
-def build_weather_info(info):
-
-    for f in info:
-        try:
-            if info[f].dtype == np.dtype('<U5'):
-                info[f] = str(info[f])
-            elif info[f].dtype == np.dtype('<U6'):
-                info[f] = str(info[f])
-            elif info[f].dtype == np.dtype('int64'):
-                info[f] = int(info[f])
-            elif info[f].dtype == np.dtype('float64'):
-                info[f] = float(info[f])
-
-
-        except:
-            print(f)
-
-
-    weather = pd.DataFrame.from_dict({
-        'year': info['year'],
-        'month': info['month'],
-        'day': info['day'],
-        'hour': info['hour'],
-        'minute': info['minute'],
-        'dni': info['dni'],
-        'ghi': info['ghi'],
-        'dhi': info['dhi'],
-        'temp_air': info['temp_air'],
-        'wind_speed': info['wind_speed'],
-    }
-    )
-
-    weather.index = pd.to_datetime(
-        pd.DataFrame.from_dict({
-            'year': info['year'],
-            'month': info['month'],
-            'day': info['day'],
-            'hour': info['hour'],
-            'minute': info['minute'],
-        })
-    )
-
-    weather.index = weather.index.tz_localize(
-        pytz.FixedOffset(float(info['local_time_zone'] * 60)))
-
-    # Remove long vectors from info.
-    for f in list(info.keys()):
-        if type(info[f]) == type(np.array([0])):
-            del info[f]
-
-
-    return weather, info
 
 #
 # def load_compressed_nsrdb_file(filename):

@@ -20,13 +20,70 @@ import pandas as pd
 
 cec_modules = pvlib.pvsystem.retrieve_sam('CeCMod')
 
-vocmaxlib_version = '0.1.0'
+vocmaxlib_version = '0.1.1'
+
+explain = {
+    'Voco': 'Open circuit voltage at reference conditions, in V',
+    'Bvoco': 'Temperature dependence of open circuit voltage, in V/C',
+    'Mbvoc': """Coefficient providing the irradiance dependence of the 
+    temperature coefficient of open circuit voltage, typically assumed to be 
+    zero, in V/C 
+
+    """,
+    'n_diode': 'Diode ideality factor, unitless',
+
+    'cells_in_series': 'Number of cells in series in each module, dimensionless',
+
+    'FD': """Fraction of diffuse irradiance arriving at the cell, typically 
+    assumed to be 1, dimensionless 
+    
+    """,
+
+    'alpha_sc': """The short-circuit current temperature coefficient of the 
+    module, in A/C 
+    
+    """,
+
+    'a_ref': """The product of the usual diode ideality factor (n_diode, 
+    unitless), number of cells in series (cells_in_series), and cell thermal 
+    voltage at reference conditions, in units of V. 
+    
+    """,
+
+    'I_L_ref': """The light-generated current (or photocurrent) at reference 
+    conditions, in amperes.
+    
+    """,
+
+    'I_o_ref': """The dark or diode reverse saturation current at reference 
+    conditions, in amperes. 
+    
+    
+    """,
+
+    'R_sh_ref': """The shunt resistance at reference conditions, in ohms.""",
+
+    'R_s': """The series resistance at reference conditions, in ohms.""",
+
+    'Isco': """Short circuit current at reference conditions, in amperes.""",
+
+    'Impo': """Maximum-power current at reference conditions, in amperes.""",
+
+    'Vmpo': """Maximum-power voltage at reference conditions, in volts.""",
+
+    'Pmpo': """Maximum-power power at reference conditions, in watts.""",
+
+    'Bisco': """Temperature coefficient of short circuit current, in A/C"""
+
+
+
+}
 
 def simulate_system(weather, info, module_parameters,
                     racking_parameters, thermal_model):
     """
 
-    Use the PVLIB singlediode model to calculate maximum Voc.
+    Use the PVLIB SAPM model to calculate maximum Voc.
 
     Parameters
     ----------
@@ -278,15 +335,20 @@ def simulate_system(weather, info, module_parameters,
         aoi_loss=aoi_loss,
         FD=module_parameters['FD']
         )
-    v_oc = calculate_voc(effective_irradiance, temps['temp_cell'],
+    v_oc = sapm_voc(effective_irradiance, temps['temp_cell'],
                                    module_parameters)
     df = weather.copy()
     df['aoi'] = aoi
     # df['aoi_loss'] = aoi_loss
     df['temp_cell'] = temps['temp_cell']
+    df['effective_irradiance'] = effective_irradiance
     df['v_oc'] = v_oc
 
+
     return df
+
+
+
 
 
 def make_voc_summary(df,module_parameters,max_string_voltage=1500):
@@ -420,7 +482,7 @@ def make_simulation_summary(df, info,module_parameters,racking_parameters,
     if 'Time Zone' in info:
         info['local_time_zone'] = info['Time Zone']
 
-    extra_parameters = calculate_extra_module_parameters(module_parameters)
+    # extra_parameters = calculate_extra_module_parameters(module_parameters)
 
 
     summary = \
@@ -431,8 +493,6 @@ def make_simulation_summary(df, info,module_parameters,racking_parameters,
              'timedelta_in_years']].to_csv(header=False) +  '\n' + \
         'Module Parameters\n' + \
         pd.Series(module_parameters).to_csv(header=False) + '\n' + \
-        'Simulated Module Parameters\n' + \
-        extra_parameters.to_csv() + '\n' + \
         'Racking Parameters\n' + \
         pd.Series(racking_parameters).to_csv(header=False) +  '\n' + \
         'Thermal model\n' + \
@@ -476,6 +536,7 @@ def calculate_normal_voc(poa_direct, poa_diffuse, temp_cell, module_parameters,
     return v_oc
 
 
+
 def calculate_effective_irradiance(poa_direct, poa_diffuse, spectral_loss=1,
                                    aoi_loss=1, FD=1):
     """
@@ -499,10 +560,12 @@ def calculate_effective_irradiance(poa_direct, poa_diffuse, spectral_loss=1,
     return effective_irradiance
 
 
-def calculate_voc(effective_irradiance, temperature, module_parameters):
+def calculate_voc(effective_irradiance, temp_cell, module,
+                  reference_temperature=25,
+                  reference_irradiance=1000):
     """
 
-    Reference conditions are 1000 W/m2 and 25 C.
+    Standard reference conditions are 1000 W/m2 and 25 C.
 
     Parameters
     ----------
@@ -533,8 +596,11 @@ def calculate_voc(effective_irradiance, temperature, module_parameters):
         circuit current, in percent.
 
 
-    model : str
+        model : str
         Model to use, can be 'cec' or 'desoto'
+        XX
+
+
 
     Returns
     -------
@@ -548,8 +614,54 @@ def calculate_voc(effective_irradiance, temperature, module_parameters):
 
     """
 
+    if module['iv_model'] == 'sapm':
+
+        v_oc = sapm_voc(effective_irradiance,temp_cell,module,
+                 reference_temperature=reference_temperature,
+                 reference_irradiance=reference_irradiance)
+
+
+
+    elif module['iv_model'] in ['cec', 'desoto']:
+
+        photocurrent, saturation_current, resistance_series, resistance_shunt, nNsVth = \
+            calcparams_singlediode(effective_irradiance, temp_cell, module)
+
+
+        # out = pvlib.pvsystem.singlediode(photocurrent, saturation_current, resistance_series, resistance_shunt, nNsVth,
+        #                            method='newton')
+
+        v_oc = pvlib.singlediode.bishop88_v_from_i(0,
+                                                   photocurrent,
+                                                   saturation_current,
+                                                   resistance_series,
+                                                   resistance_shunt,
+                                                   nNsVth,
+                                                   method='newton')
+
+    else:
+        raise Exception('iv_model not recognized')
+
+    return v_oc
+
+
+def singlediode_voc(effective_irradiance, temp_cell, module_parameters):
+    """
+    Calculate voc using the singlediode model.
+
+    Parameters
+    ----------
+    effective_irradiance
+    temp_cell
+    module_parameters
+
+    Returns
+    -------
+
+    """
+
     photocurrent, saturation_current, resistance_series, resistance_shunt, nNsVth = \
-        calcparams_singlediode(effective_irradiance, temperature, module_parameters)
+        calcparams_singlediode(effective_irradiance, temp_cell, module_parameters)
 
 
     # out = pvlib.pvsystem.singlediode(photocurrent, saturation_current, resistance_series, resistance_shunt, nNsVth,
@@ -564,7 +676,67 @@ def calculate_voc(effective_irradiance, temperature, module_parameters):
                                                method='newton')
     return v_oc
 
+
+def sapm_voc(effective_irradiance, temp_cell, module, reference_temperature=25,
+                  reference_irradiance=1000):
+
+    """
+
+    Parameters
+    ----------
+    effective_irradiance
+        Effective irradiance in W/m^2
+
+    temp_cell
+
+    module
+
+    reference_temperature
+    reference_irradiance
+
+    Returns
+    -------
+
+    """
+
+    T0 = reference_temperature
+    q = 1.60218e-19  # Elementary charge in units of coulombs
+    kb = 1.38066e-23  # Boltzmann's constant in units of J/K
+
+    # avoid problem with integer input
+    Ee = np.array(effective_irradiance, dtype='float64')
+
+    # set up masking for 0, positive, and nan inputs
+    Ee_gt_0 = np.full_like(Ee, False, dtype='bool')
+    Ee_eq_0 = np.full_like(Ee, False, dtype='bool')
+    notnan = ~np.isnan(Ee)
+    np.greater(Ee, 0, where=notnan, out=Ee_gt_0)
+    np.equal(Ee, 0, where=notnan, out=Ee_eq_0)
+
+    # Bvmpo = module['Bvmpo'] + module['Mbvmp'] * (1 - Ee)
+    Bvoco = module['Bvoco'] + module['Mbvoc'] * (1 - Ee)
+    delta = module['n_diode'] * kb * (temp_cell + 273.15) / q
+
+    # avoid repeated computation
+    logEe = np.full_like(Ee, np.nan)
+    np.log(Ee/reference_irradiance, where=Ee_gt_0, out=logEe)
+    logEe = np.where(Ee_eq_0, -np.inf, logEe)
+
+    # avoid repeated __getitem__
+    cells_in_series = module['cells_in_series']
+
+    v_oc = np.maximum(0, (
+            module['Voco'] + cells_in_series * delta * logEe +
+            Bvoco * (temp_cell - T0)))
+
+    return v_oc
+
 def calcparams_singlediode(effective_irradiance, temperature, module_parameters):
+
+
+    # Default to desoto model.
+    if not 'iv_model' in module_parameters.keys():
+        module_parameters['iv_model'] = 'desoto'
 
     if module_parameters['iv_model'] =='desoto':
         photocurrent, saturation_current, resistance_series, resistance_shunt, nNsVth = \
@@ -615,17 +787,18 @@ def calculate_iv_curve(effective_irradiance, temperature, module_parameters,
 
     return iv_curve
 
-def calculate_extra_module_parameters(module_parameters,reference_irradiance=1000,
+def calculate_sapm_module_parameters(module_parameters,reference_irradiance=1000,
                                           reference_temperature=25):
+
     """
 
     Calculate standard parameters of modules from the single diode model.
 
-    :param module_parameters: dict
+    module_parameters: dict
 
+    Returns
 
-    :return param: dict
-         Dict of parameters including:
+    Dict of parameters including:
 
          'Voco' - open circuit voltage at STC.
 
@@ -645,6 +818,16 @@ def calculate_extra_module_parameters(module_parameters,reference_irradiance=100
 
 
     """
+    param = {}
+    param['cells_in_series'] = module_parameters['N_s']
+
+    kB = 1.381e-23
+    q = 1.602e-19
+    Vthref = kB * (273.15 + 25) / q
+
+    param['n_diode'] = module_parameters['a_ref'] / (module_parameters['N_s'] * Vthref)
+
+
     # Calculate Voc vs. temperature for finding coefficients
     temp_cell_smooth = np.linspace(reference_temperature-5,
                                    reference_temperature+5, 5)
@@ -667,11 +850,6 @@ def calculate_extra_module_parameters(module_parameters,reference_irradiance=100
             saturation_current, resistance_series, resistance_shunt, nNsVth)
 
 
-
-
-
-
-    param = {}
     param['Voco'] = iv_points_0['v_oc']
     param['Isco'] = iv_points_0['i_sc']
     param['Impo'] = iv_points_0['i_mp']
@@ -690,28 +868,96 @@ def calculate_extra_module_parameters(module_parameters,reference_irradiance=100
     isc_fit_coeff = np.polyfit(temp_cell_smooth, iv_points['i_sc'], 1)
     param['Bisco'] = isc_fit_coeff[0]
 
+    param['Mbvoc'] = 0
+    param['FD'] = 1
 
-    description = {
-        'Voco':'Open circuit voltage at STC (V)',
-        'Isco':'Short circuit current at STC (A)',
-        'Impo':'Max power current at STC (A)',
-        'Vmpo':'Max power voltage at STC (V)',
-        'Pmpo':'Max power power at STC (W)',
-        'Bvoco':'Temperature coeff. of open circuit voltage near STC (V/C)',
-        'Bpmpo':'Temperature coeff. of max power near STC (W/C)',
-        'Bisco':'Tempearture coeff. of short circuit current near STC (A/C)'
-    }
+    param['iv_model'] = 'sapm'
 
-    extra_parameters = pd.DataFrame(
-                index= list(param.keys()),
-                 columns=['Parameter','Value','Description'])
+    # description = {
+    #     'Voco':'Open circuit voltage at STC (V)',
+    #     'Isco':'Short circuit current at STC (A)',
+    #     'Impo':'Max power current at STC (A)',
+    #     'Vmpo':'Max power voltage at STC (V)',
+    #     'Pmpo':'Max power power at STC (W)',
+    #     'Bvoco':'Temperature coeff. of open circuit voltage near STC (V/C)',
+    #     'Bpmpo':'Temperature coeff. of max power near STC (W/C)',
+    #     'Bisco':'Tempearture coeff. of short circuit current near STC (A/C)',
+    #     'cells_in_series': 'Number of cells in series',
+    #     'n_diode': 'diode ideality factor',
+    #
+    # }
+    #
+    # sapm_module = pd.DataFrame(
+    #             index= list(param.keys()),
+    #              columns=['Parameter','Value','Description'])
+    #
+    # sapm_module['Parameter'] = sapm_module.index
+    # sapm_module['Value'] = sapm_module.index.map(param)
+    # sapm_module['Description'] = sapm_module.index.map(description)
+    #
 
-    extra_parameters['Parameter'] = extra_parameters.index
-    extra_parameters['Value'] = extra_parameters.index.map(param)
-    extra_parameters['Description'] = extra_parameters.index.map(description)
 
 
-    return extra_parameters
+    return param
+
+#
+#
+# def calculate_sapm_module_parameters_df(module_parameters,reference_irradiance=1000,
+#                                           reference_temperature=25):
+#     """
+#
+#     Calculate standard parameters of modules from the single diode model.
+#
+#     module_parameters: dict
+#
+#     Returns
+#
+#     Dict of parameters including:
+#
+#          'Voco' - open circuit voltage at STC.
+#
+#          'Bvoco' - temperature coefficient of Voc near STC, in V/C
+#
+#          Isco - short circuit current at STC
+#
+#          Bisco - temperature coefficient of Isc near STC, in A/C
+#
+#          Vmpo - voltage at maximum power point at STC, in V
+#
+#          Pmpo - power at maximum power point at STC, in W
+#
+#          Impo - current at maximum power point at STC, in A
+#
+#          Bpmpo - temperature coefficient of maximum power near STC, in W/C
+#
+#
+#     """
+#
+#     param = calculate_sapm_module_parameters(module_parameters,
+#                                         reference_irradiance=reference_irradiance,
+#                                           reference_temperature=reference_temperature)
+#
+#     description = {
+#         'Voco':'Open circuit voltage at STC (V)',
+#         'Isco':'Short circuit current at STC (A)',
+#         'Impo':'Max power current at STC (A)',
+#         'Vmpo':'Max power voltage at STC (V)',
+#         'Pmpo':'Max power power at STC (W)',
+#         'Bvoco':'Temperature coeff. of open circuit voltage near STC (V/C)',
+#         'Bpmpo':'Temperature coeff. of max power near STC (W/C)',
+#         'Bisco':'Tempearture coeff. of short circuit current near STC (A/C)'
+#     }
+#
+#     extra_parameters = pd.DataFrame(
+#                 index= list(param.keys()),
+#                  columns=['Parameter','Value','Description'])
+#
+#     extra_parameters['Parameter'] = extra_parameters.index
+#     extra_parameters['Value'] = extra_parameters.index.map(param)
+#     extra_parameters['Description'] = extra_parameters.index.map(description)
+#
+#
+#     return extra_parameters
 
 def calculate_mean_yearly_min_temp(datetimevec, temperature):
     """

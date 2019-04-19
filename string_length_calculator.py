@@ -71,15 +71,6 @@ layout = dbc.Container([
     ),
 
     dbc.Row([
-        dbc.Col(
-            [
-            dbc.Button("Tell me more about NEC",
-                       id="nec-button",
-                       n_clicks=0,
-                       color='light',
-                       className="mb-3")
-            ],width=3
-        ),
         dbc.Col([
             dbc.Button("Show me more details",
                        id="details-button",
@@ -89,68 +80,54 @@ layout = dbc.Container([
         ],width=3)
 
     ],justify='start'),
-#                            The maximum open circuit voltage(Voc) is a key design
-#                            parameter for solar power
-# plants.This
-# application
-# provides
-# an
-# industry - standard
-# method
-# for calculating the maximum open circuit voltage
-# given weather data and module parameters.Weather data is sourced from the
-# national solar radiation database (NSRDB)[1].The open circuit voltage
-# is calculated using the Sandia PV models[2] as implemented in the open
-# source python library PVLIB[3].This work is funded by the Duramat
-# consortium[4].
 
-    dbc.Collapse(
-        dbc.Card(dbc.CardBody([
-
-            dcc.Markdown("""### National Electric Code Standards
-            
-            The National Electric Code 2017 lists three different methods 
-            for determining the maximum string length in Article 690.7:
-        
-            """.replace('    ','')
-            ),
-            html.Ol([
-                html.Li("""690.7(A)(1) Instruction in listing or labeling of module: 
-                The sum of the PV module-rated open-circuit voltage of the 
-                series-connected modules corrected for the lowest expected ambient 
-                temperature using the open-circuit voltage temperature coefficients 
-                in accordance with the instructions included in the listing or 
-                labeling of the module. 
-        
-                """),
-                html.Li("""690.7(A)(2) Crystalline and multicrystalline modules: For 
-                crystalline and multicrystalline silicon modules, the sum of the PV 
-                module-rated open-circuit voltage of the series-connected modules 
-                corrected for the lowest expected ambient temperature using the 
-                correction factor provided in Table 690.7(A). 
-        
-                """),
-                html.Li("""690.7(A)(3) PV systems of 100 kW or larger: For PV systems 
-                with a generating capcity of 100 kW or greater, a documented and 
-                stamped PV system design, using an industry standard method and 
-                provided by a licensed professional electrical engineer, shall be 
-                permitted. 
-        
-                """)
-
-            ], style={'marginLeft': 50}),
-            html.P("""This tool provides standard values for methods 690.7(A)(1) 
-            and 690.7(A)(3). For method 690.7(A)(1), The lowest 
-            expected ambient temperature is calculated by finding the minimum 
-            temperature during daylight hours, defined as GHI>150 W/m^2. For 
-            method 690.7(A)(3), the full PVLIB model is run using weather 
-            data from the selected location and module parameters. 
-            
-            """),
-
-        ])),
-        id="nec-collapse",
-    ),
+    # dbc.Collapse(
+    #     dbc.Card(dbc.CardBody([
+    #
+    #         dcc.Markdown("""### National Electric Code Standards
+    #
+    #         The National Electric Code 2017 lists three different methods
+    #         for determining the maximum string length in Article 690.7:
+    #
+    #         """.replace('    ','')
+    #         ),
+    #         html.Ol([
+    #             html.Li("""690.7(A)(1) Instruction in listing or labeling of module:
+    #             The sum of the PV module-rated open-circuit voltage of the
+    #             series-connected modules corrected for the lowest expected ambient
+    #             temperature using the open-circuit voltage temperature coefficients
+    #             in accordance with the instructions included in the listing or
+    #             labeling of the module.
+    #
+    #             """),
+    #             html.Li("""690.7(A)(2) Crystalline and multicrystalline modules: For
+    #             crystalline and multicrystalline silicon modules, the sum of the PV
+    #             module-rated open-circuit voltage of the series-connected modules
+    #             corrected for the lowest expected ambient temperature using the
+    #             correction factor provided in Table 690.7(A).
+    #
+    #             """),
+    #             html.Li("""690.7(A)(3) PV systems of 100 kW or larger: For PV systems
+    #             with a generating capcity of 100 kW or greater, a documented and
+    #             stamped PV system design, using an industry standard method and
+    #             provided by a licensed professional electrical engineer, shall be
+    #             permitted.
+    #
+    #             """)
+    #
+    #         ], style={'marginLeft': 50}),
+    #         html.P("""This tool provides standard values for methods 690.7(A)(1)
+    #         and 690.7(A)(3). For method 690.7(A)(1), The lowest
+    #         expected ambient temperature is calculated by finding the minimum
+    #         temperature during daylight hours, defined as GHI>150 W/m^2. For
+    #         method 690.7(A)(3), the full PVLIB model is run using weather
+    #         data from the selected location and module parameters.
+    #
+    #         """),
+    #
+    #     ])),
+    #     id="nec-collapse",
+    # ),
 
     dbc.Collapse(
         dbc.Card(dbc.CardBody([
@@ -181,19 +158,70 @@ layout = dbc.Container([
             
             ### Simulation methods
             
-            The string voltage calculator uses the open 
-            source [PVLIB](https://pvlib-python.readthedocs.io/en/latest/) 
-            library to perform the calculation using the single diode model 
-            and the De Soto parameterization [5]. Module parameters are 
-            either taken from the CEC database or entered manually. The 
-            calculation conservatively assumes that all diffuse irradiance is 
-            used (FD=1) and that there are no reflection losses from the top 
-            cell (aoi_model='no_loss'). These two assumptions cause a small 
-            increase in Voc and make the simulation more conservative. 
-            Specific details on the exact calculation method are described in 
-            [vocmax](https://github.com/toddkarin/vocmax).  
+            The string voltage calculator uses the open source [PVLIB]( 
+            https://pvlib-python.readthedocs.io/en/latest/) library to 
+            perform the calculation. The first step is to determine the 
+            plane-of-array irradiance given the mounting configuration and 
+            weather data. If the California energy Commission (CEC) lookup 
+            table is used, the relevant module parameters are calculated 
+            using the single diode model under the De Soto parameterization [ 
+            5]. The relevant module parameters are the open-circuit voltage 
+            at reference conditions (Voco), the temperature coefficient of 
+            the open circuit voltage in V/C (Bvoco), the number of cells in 
+            series in each module (cells_in_series) and the diode ideality 
+            factor (n_diode). Alternately, module parameters 
+            from the datasheet can be entered manually. 
+             
+            The calculation conservatively assumes that all diffuse 
+            irradiance is used (FD=1) and that there are no reflection losses 
+            from the top cell (aoi_model='no_loss'). These two assumptions 
+            cause a small increase in Voc and make the simulation more 
+            conservative. Specific details on the exact calculation method 
+            are described in [vocmax](https://github.com/toddkarin/vocmax).
             
-                        
+            The open circuit voltage is modeled using the equation:
+            
+            Voc = Voco + cells_in_series·delta·log(E/E0) + Bvoc·(T-T0)
+            
+            where delta = n_diode·k_B·T/q is the thermal voltage, Bvoc 
+            = Bvoco + Mbvoc·(1-E/E0), Mbvoc is the coefficient of the 
+            irradiance dependence of the temperature coefficient of open 
+            circuit voltage, E is the plane-of-array irradiance, E0 = 1000 
+            W/m^2 is the reference irradiance, T0 = 25 C is the reference 
+            temperature, kB is the Boltzmann constant, T is the cell 
+            temperature and q is the electron charge. 
+            
+            ### National Electric Code Standards
+            
+            The National Electric Code 2017 lists three different methods 
+            for determining the maximum string length in Article 690.7:
+            
+            - 690.7(A)(1) Instruction in listing or labeling of module: The 
+            sum of the PV module-rated open-circuit voltage of the 
+            series-connected modules corrected for the lowest expected 
+            ambient temperature using the open-circuit voltage temperature 
+            coefficients in accordance with the instructions included in the 
+            listing or labeling of the module. 
+            
+            - 690.7(A)(2) Crystalline and multicrystalline modules: For 
+            crystalline and multicrystalline silicon modules, the sum of the 
+            PV module-rated open-circuit voltage of the series-connected 
+            modules corrected for the lowest expected ambient temperature 
+            using the correction factor provided in Table 690.7(A). 
+            
+            - 690.7(A)(3) PV systems of 100 kW or larger: For PV systems with 
+            a generating capcity of 100 kW or greater, a documented and 
+            stamped PV system design, using an industry standard method and 
+            provided by a licensed professional electrical engineer, shall be 
+            permitted. 
+            
+            This tool provides standard values for methods 690.7(A)(1) 
+            and 690.7(A)(3). For method 690.7(A)(1), The lowest 
+            expected ambient temperature is calculated by finding the minimum 
+            temperature during daylight hours, defined as GHI>150 W/m^2. For 
+            method 690.7(A)(3), the full PVLIB model is run using weather 
+            data from the selected location and module parameters. 
+                
             ### Who we are
             
             We are a collection of national lab researchers funded under the 
@@ -288,88 +316,46 @@ layout = dbc.Container([
                     dbc.Card(
                         dbc.CardBody(
                             [
-                                html.P("""Manually set module parameters.
+                                dcc.Markdown("""###### Manually set module parameters.
                                 
                                 """),
-                                dbc.Label("""Module name 
-        
-                                            """),
+                                dbc.Label("""Module name"""),
                                 dbc.Input(id='module_name_manual',
                                           value='Custom Module',
                                           type='text',
                                           style={'max-width': 200}),
                                 dbc.FormText("""Module name for records"""),
                                 html.P(''),
-                                dbc.Label("""alpha_sc"""),
-                                dbc.Input(id='alpha_sc', value='0.007997', type='text',
+                                dbc.Label("""Voco"""),
+                                dbc.Input(id='Voco', value='48.5', type='text',
                                           style={'max-width': 200}),
-                                dbc.FormText("""The short-circuit current 
-                                temperature coefficient of the module in 
-                                units of A/C 
-        
-                                """
-                                ),
+                                dbc.FormText(vocmaxlib.explain['Voco']),
                                 html.P(''),
-                                dbc.Label("""a_ref"""),
-                                dbc.Input(id='a_ref', value='1.6413', type='text',
+                                dbc.Label("""Bvoco"""),
+                                dbc.Input(id='Bvoco', value='-0.163', type='text',
                                           style={'max-width': 200}),
-                                dbc.FormText("""The product of the usual 
-                                diode ideality factor (n, unitless), number 
-                                of cells in series (Ns), and cell thermal 
-                                voltage at reference conditions, in units of V. 
-        
-                                            """),
+                                dbc.FormText(vocmaxlib.explain['Bvoco']),
                                 html.P(''),
-                                dbc.Label("""I_L_ref"""),
-                                dbc.Input(id='I_L_ref', value='7.843', type='text',
+                                dbc.Label("""Mbvoc"""),
+                                dbc.Input(id='Mbvoc', value='0', type='text',
                                           style={'max-width': 200}),
-                                dbc.FormText("""The light-generated current (or 
-                                photocurrent) at reference conditions, in amperes. 
-        
-                                            
-                                """),
+                                dbc.FormText(vocmaxlib.explain['Mbvoc']),
                                 html.P(''),
-                                dbc.Label("""I_o_ref"""),
-                                dbc.Input(id='I_o_ref', value='1.936e-09', type='text',
+                                dbc.Label("""cells_in_series"""),
+                                dbc.Input(id='cells_in_series', value='72', type='text',
                                           style={'max-width': 200}),
-                                dbc.FormText("""The dark or diode reverse 
-                                saturation current at reference conditions, in amperes. 
-                                """),
+                                dbc.FormText(vocmaxlib.explain['cells_in_series']),
                                 html.P(''),
-                                dbc.Label("""R_sh_ref
-        
-                                            """),
-
-                                dbc.Input(id='R_sh_ref', value='839.4', type='text',
+                                dbc.Label("""n_diode"""),
+                                dbc.Input(id='n_diode', value='1.05', type='text',
                                           style={'max-width': 200}),
-                                dbc.FormText("""The shunt resistance at 
-                                reference conditions, in ohms. 
-                                 
-                                """),
+                                dbc.FormText(vocmaxlib.explain['n_diode'] +
+                                             '. Suggested values are 1.1 for mono-c-Si, 1.2 for multi-c-Si, and 1.4 for CdTe.'),
                                 html.P(''),
-                                dbc.Label("""R_s"""),
-                                dbc.Input(id='R_s', value='0.359', type='text',
-                                          style={'max-width': 200}),
-                                dbc.FormText("""The series resistance at reference 
-                                conditions, in ohms. 
-                                
-                                """),
-                                html.P(''),
-                                # dbc.Label("""Adjust"""),
-                                # dbc.Input(id='Adjust', value='16.5', type='text',
-                                #           style={'max-width': 200}),
-                                # dbc.FormText("""The adjustment to the
-                                # temperature coefficient for short circuit
-                                # current, in percent.
-                                #
-                                # """),
                                 dbc.Label("""FD"""),
                                 dbc.Input(id='FD', value='1', type='text',
                                           style={'max-width': 200}),
-                                dbc.FormText("""Fraction of diffuse 
-                                irradiance arriving at cell.  
-                                
-                                """),
+                                dbc.FormText(vocmaxlib.explain['FD']),
                                 html.P(''),
                                 # dbc.Button('Calculate module parameters',id='show_iv',n_clicks=0),
                                 html.Div(id='manual_iv')
@@ -400,7 +386,7 @@ layout = dbc.Container([
                              ]
                         )
                     )
-                ], tab_id='manual', label='Manual Entry')
+                ], tab_id='manual', label='Manual Entry'),
             ], id='module_parameter_input_type', active_tab='lookup'),
         ])
     ]),
@@ -654,6 +640,18 @@ layout = dbc.Container([
     ]),
     html.Details([
         html.Summary(
+            "Where can I find an index of parameters?"),
+        html.Div([
+            # dcc.Markdown("""Right here!"""),
+                dcc.Markdown('**' + p + '**: ' + vocmaxlib.explain[p] ) for p in vocmaxlib.explain
+
+
+        ],style={'marginLeft': 50}
+        ),
+
+    ]),
+    html.Details([
+        html.Summary(
             "Do you store any of my data?"),
         html.Div([
             dcc.Markdown("""We take your privacy seriously. We do not store 
@@ -724,16 +722,16 @@ layout = dbc.Container([
            'align': 'center'})
 
 
-
-@app.callback(
-    Output("nec-collapse", "is_open"),
-    [Input("nec-button", "n_clicks")],
-    [State("nec-collapse", "is_open")],
-)
-def toggle_collapse(n, is_open):
-    if n:
-        return not is_open
-    return is_open
+#
+# @app.callback(
+#     Output("nec-collapse", "is_open"),
+#     [Input("nec-button", "n_clicks")],
+#     [State("nec-collapse", "is_open")],
+# )
+# def toggle_collapse(n, is_open):
+#     if n:
+#         return not is_open
+#     return is_open
 
 
 @app.callback(
@@ -972,9 +970,20 @@ def update_Voco(racking_model):
 
 
 def make_iv_summary_layout(module_parameters):
-
-    extra_parameters = vocmaxlib.calculate_extra_module_parameters(
+    #
+    extra_parameters_dict = vocmaxlib.calculate_sapm_module_parameters(
         module_parameters)
+
+
+    extra_parameters = pd.DataFrame(extra_parameters_dict,index=['Value']).transpose()
+    extra_parameters['Parameter'] = extra_parameters.index
+    extra_parameters = extra_parameters[['Parameter','Value']]
+
+    # extra_parameters = vocmaxlib.calculate_sapm_module_parameters_df(module_parameters)
+
+    extra_parameters = extra_parameters.drop('iv_model')
+    print(extra_parameters)
+
     extra_parameters['Value'] = extra_parameters['Value'].map(
         lambda x: '%2.3g' % x)
 
@@ -1104,63 +1113,35 @@ def prepare_data(module_name):
 
 @app.callback(Output('manual_iv', 'children'),
               [
-                  # Input('show_iv', 'n_clicks')
                   Input('module_name_manual', 'value'),
-                  Input('alpha_sc', 'value'),
-                  Input('a_ref', 'value'),
-                  Input('I_L_ref', 'value'),
-                  Input('I_o_ref', 'value'),
-                  Input('R_sh_ref', 'value'),
-                  Input('R_s', 'value'),
-                  # Input('Adjust', 'value'),
+                  Input('Voco', 'value'),
+                  Input('Bvoco', 'value'),
+                  Input('Mbvoc', 'value'),
+                  Input('n_diode', 'value'),
+                  Input('cells_in_series', 'value'),
                   Input('FD', 'value'),
                ]
               )
 def prepare_data(module_name_manual,
-                 alpha_sc, a_ref, I_L_ref, I_o_ref, R_sh_ref, R_s, FD):
+                 Voco, Bvoco, Mbvoc, n_diode, cells_in_series, FD):
     try:
         module_parameters = {
             'name': module_name_manual,
-            'alpha_sc': float(alpha_sc),
-            'a_ref': float(a_ref),
-            'I_L_ref': float(I_L_ref),
-            'I_o_ref': float(I_o_ref),
-            'R_sh_ref': float(R_sh_ref),
-            'R_s': float(R_s),
-            'iv_model':'desoto',
-            # 'Adjust': float(Adjust),
+            'Voco': float(Voco),
+            'Bvoco': float(Bvoco),
+            'Mbvoc': float(Mbvoc),
+            'n_diode': float(n_diode),
+            'cells_in_series': float(cells_in_series),
+            'iv_model':'sapm',
             'FD': float(FD)
         }
 
-        return make_iv_summary_layout(module_parameters)
+        return html.P('Valid Input')
     #
     except:
         return [
             html.P('Input values invalid.')
         ]
-    # # print(module_name)
-    # module_parameters = pvtoolslib.cec_modules[module_name].to_dict()
-    # module_parameters['FD'] = 1
-    # module_parameters['name'] = module_name
-    # module_parameters['aoi_model'] = 'no_loss'
-    #
-
-
-#
-#
-# def process_simulation_input(lat, lon,  module_parameter_input_type, module_name, module_name_manual,
-#                  alpha_sc, a_ref, I_L_ref, I_o_ref, R_sh_ref, R_s, Adjust, FD,
-#                  thermal_model_input_type, racking_model, a, b, DT,
-#                  mount_type, surface_tilt, surface_azimuth,
-#                  axis_tilt, axis_azimuth, max_angle, backtrack, ground_coverate_ratio,
-#                  max_string_voltage):
-#
-#
-#
-#     lat = float(lat)
-#     lon = float(lon)
-#     return lat,lon, module_parameters, thermal_model, racking_parameters, max_string_voltage
-
 
 
 @app.callback(Output('load', 'children'),
@@ -1199,9 +1180,9 @@ def get_weather_data(lat,lon):
     filename = filedata_closest['filename'].iloc[0]
 
     if filename=='124250_37.93_-122.3.npz':
-        weather, info = pvtoolslib.get_local_weather_data(filename)
+        weather, info = nsrdbtools.get_local_weather_data(filename)
     else:
-        weather, info = pvtoolslib.get_s3_weather_data(filename)
+        weather, info = nsrdbtools.get_s3_weather_data(filename)
 
     return weather, info
 
@@ -1216,13 +1197,11 @@ def get_weather_data(lat,lon):
                 State('module_parameter_input_type','active_tab'),
                 State('module_name','value'),
                 State('module_name_manual','value'),
-                State('alpha_sc','value'),
-                State('a_ref','value'),
-                State('I_L_ref','value'),
-                State('I_o_ref','value'),
-                State('R_sh_ref','value'),
-                State('R_s','value'),
-                # State('Adjust','value'),
+                State('Voco','value'),
+                State('Bvoco','value'),
+                State('Mbvoc','value'),
+                State('n_diode','value'),
+                State('cells_in_series','value'),
                 State('FD','value'),
                 State('thermal_model_input_type', 'active_tab'),
                 State('racking_model', 'value'),
@@ -1241,7 +1220,7 @@ def get_weather_data(lat,lon):
                ]
               )
 def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name, module_name_manual,
-                 alpha_sc, a_ref, I_L_ref, I_o_ref, R_sh_ref, R_s, FD,
+                 Voco, Bvoco, Mbvoc, n_diode, cells_in_series, FD,
                  thermal_model_input_type, racking_model, a, b, DT,
                  mount_type, surface_tilt, surface_azimuth,
                  axis_tilt, axis_azimuth, max_angle, backtrack, ground_coverate_ratio,
@@ -1304,17 +1283,15 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         'module_parameter_input_type': module_parameter_input_type,
         'module_name': module_name,
         'module_name_manual': module_name_manual,
-        'alpha_sc': alpha_sc,
-        'a_ref': a_ref,
-        'I_L_ref': I_L_ref,
-        'I_o_ref': I_o_ref,
-        'R_sh_ref': R_sh_ref,
-        'R_s': R_s,
-        # 'Adjust': Adjust,
+        'Voco': Voco,
+        'Bvoco': Bvoco,
+        'Mbvoc': Mbvoc,
+        'n_diode': n_diode,
+        'cells_in_series': cells_in_series,
         'FD': FD,
         'thermal_model_input_type': thermal_model_input_type,
         'racking_model': racking_model,
-        'a':a,
+        'a': a,
         'b': b,
         'DT': DT,
         'mount_type': mount_type,
@@ -1338,33 +1315,35 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     request_str = request_str.replace(' ','_')
 
 
-    # print(request_str)
-    is_default_calculation = request_str == '?lat=37.88&lon=-122.25&module_parameter_input_type=lookup&module_name=1Soltech_1STH_215_P&module_name_manual=Custom_Module&alpha_sc=0.007997&a_ref=1.6413&I_L_ref=7.843&I_o_ref=1.936e-09&R_sh_ref=839.4&R_s=0.359&FD=1&thermal_model_input_type=lookup&racking_model=open_rack_cell_glassback&a=-3.47&b=-0.0594&DT=3&mount_type=fixed_tilt&surface_tilt=30&surface_azimuth=180&axis_tilt=0&axis_azimuth=0&max_angle=90&backtrack=True&ground_coverage_ratio=0.286&max_string_voltage=1500&iv_model=desoto'
+
+    is_default_calculation = request_str[0:22] == '?lat=37.88&lon=-122.25'
     print('String Voltage Calculator:Calculate started:default=' + str(is_default_calculation))
     # print(request_str)
 
 
 
-    # print('/'.join(all_params))
-
     if module_parameter_input_type=='lookup':
-        module_parameters = pvtoolslib.cec_modules[module_name].to_dict()
-        module_parameters['FD'] = 1
-        module_parameters['name'] = module_name
-        module_parameters['aoi_model'] = 'no_loss'
-        module_parameters['iv_model'] = 'desoto'
+        cec_parameters = pvtoolslib.cec_modules[module_name].to_dict()
+        cec_parameters['FD'] = 1
+        cec_parameters['name'] = module_name
+        cec_parameters['aoi_model'] = 'no_loss'
+
+        sapm_parameters = vocmaxlib.calculate_sapm_module_parameters(
+            cec_parameters)
+
+        module = {**sapm_parameters, **cec_parameters}
+
     elif module_parameter_input_type=='manual':
-        module_parameters = {
+        module = {
             'name': module_name_manual,
-            'alpha_sc': float(alpha_sc),
-            'a_ref': float(a_ref),
-            'I_L_ref': float(I_L_ref),
-            'I_o_ref': float(I_o_ref),
-            'R_sh_ref': float(R_sh_ref),
-            'R_s': float(R_s),
-            # 'Adjust': float(Adjust),
-            'FD': float(FD),
-            'iv_model': 'desoto'
+            'Voco': float(Voco),
+            'Bvoco': float(Bvoco),
+            'Mbvoc': float(Mbvoc),
+            'n_diode': float(n_diode),
+            'cells_in_series': float(cells_in_series),
+            'aoi_model': 'no_loss',
+            'iv_model': 'sapm',
+            'FD': float(FD)
         }
     else:
         print('input type not understood.')
@@ -1404,10 +1383,10 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     # print('Getting weather data...')
     weather, info = get_weather_data(lat,lon)
 
-    df = vocmaxlib.simulate_system(weather, info,module_parameters,
+    df = vocmaxlib.simulate_system(weather, info,module,
                                    racking_parameters, thermal_model)
 
-    voc_summary = vocmaxlib.make_voc_summary(df, module_parameters,
+    voc_summary = vocmaxlib.make_voc_summary(df, module,
                                    max_string_voltage=max_string_voltage)
 
 
@@ -1424,7 +1403,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     voc_summary_table = voc_summary_table[['Voc','Max String Voltage','String Length','Note']]
 
     summary_text = vocmaxlib.make_simulation_summary(df, info,
-                                                 module_parameters,
+                                                 module,
                                                  racking_parameters,
                                                  thermal_model,
                                                  max_string_voltage)
@@ -1521,7 +1500,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                 ],
                 'layout': go.Layout(
                     title=go.layout.Title(
-                        text='Figure 1. Histogram of Voc values over the simultaion time.',
+                        text='Figure 1. Histogram of Voc values over the simulation time.',
                         xref='paper',
                         x=0
                     ),
@@ -1798,25 +1777,31 @@ def download_simulation_data():
 
 
 
+
     if p['module_parameter_input_type']=='lookup':
-        module_parameters = pvtoolslib.cec_modules[p['module_name']].to_dict()
-        module_parameters['FD'] = 1
-        module_parameters['name'] = p['module_name']
-        module_parameters['aoi_model'] = 'no_loss'
-        module_parameters['iv_model'] = p['iv_model']
+        cec_parameters = pvtoolslib.cec_modules[p['module_name']].to_dict()
+        cec_parameters['FD'] = 1
+        cec_parameters['name'] = p['module_name']
+        cec_parameters['aoi_model'] = 'no_loss'
+        sapm_parameters = vocmaxlib.calculate_sapm_module_parameters(
+            cec_parameters)
+        sapm_parameters['iv_model'] = 'sapm'
+        module = {**sapm_parameters, **cec_parameters}
+
+
     elif p['module_parameter_input_type']=='manual':
-        module_parameters = {
+        module = {
             'name': p['module_name_manual'],
-            'alpha_sc': float(p['alpha_sc']),
-            'a_ref': float(p['a_ref']),
-            'I_L_ref': float(p['I_L_ref']),
-            'I_o_ref': float(p['I_o_ref']),
-            'R_sh_ref': float(p['R_sh_ref']),
-            'R_s': float(p['R_s']),
-            'iv_model': p['iv_model'],
-            # 'Adjust': float(p['Adjust']),
+            'Voco': float(p['Voco']),
+            'Bvoco': float(p['Bvoco']),
+            'Mbvoc': float(p['Mbvoc']),
+            'n_diode': float(p['n_diode']),
+            'cells_in_series': float(p['cells_in_series']),
+            'aoi_model': 'no_loss',
+            'iv_model': 'sapm',
             'FD': float(p['FD'])
         }
+
     else:
         print('input type not understood.')
 
@@ -1853,38 +1838,49 @@ def download_simulation_data():
 
     max_string_voltage = float(p['max_string_voltage'])
 
+    print('String Voltage Calculator:Input processed:')
 
 
     weather, info = pvtoolslib.get_s3_weather_data(
         filedata_closest['filename'].iloc[0])
 
 
-
-    df = vocmaxlib.simulate_system(weather, info,module_parameters,
+    df = vocmaxlib.simulate_system(weather, info,module,
                                    racking_parameters, thermal_model)
 
+    print('String Voltage Calculator:Simulation complete:')
     # df_temp = pd.DataFrame(info,index=[0])
-    df_temp = df.copy()
-    df_temp['wind_speed'] = df_temp['wind_speed'].map(lambda x: '%2.1f' % x)
-    df_temp['v_oc'] = df_temp['v_oc'].map(lambda x: '%3.2f' % x)
-    df_temp['temp_cell'] = df_temp['temp_cell'].map(lambda x: '%2.1f' % x)
-    df_temp['aoi'] = df_temp['aoi'].map(lambda x: '%3.0f' % x)
+    # df_temp = df.copy()
 
+    # print(df_temp.keys())
+
+    # df_temp = df.copy()
+    # df_temp = df_temp.drop('aoi')
+    df = df[['year','month','day','hour','minute','dni','ghi','dhi',
+                  'temp_air','wind_speed','temp_cell','effective_irradiance','v_oc']]
+
+    df['wind_speed'] = df['wind_speed'].map(lambda x: '%.1f' % x)
+    df['v_oc'] = df['v_oc'].map(lambda x: '%.4g' % x)
+    df['temp_cell'] = df['temp_cell'].map(lambda x: '%.0f' % x)
+    # df_temp['aoi'] = df_temp['aoi'].map(lambda x: '%3.0f' % x)
+    df['effective_irradiance'] = df['effective_irradiance'].map(lambda x: '%.0f' % x)
+
+    print('String Voltage Calculator:df made:')
 
     #Create DF
-    d = {'col1': [1, 2], 'col2': [3, 4]}
-    df = pd.DataFrame(data=d)
+    # d = {'col1': [1, 2], 'col2': [3, 4]}
+    # df = pd.DataFrame(data=d)
 
 
 
     #Convert DF
     str_io = io.StringIO()
     pd.DataFrame(
-        {**info, **module_parameters, **thermal_model_dict, **racking_parameters},
+        {**info, **module, **thermal_model_dict, **racking_parameters},
                  index=['']).to_csv(str_io, sep=",",index=False)
     # pd.DataFrame(module_parameters, index=['']).to_csv(str_io, sep=",")
     # pd.DataFrame(racking_parameters, index=['']).to_csv(str_io, sep=",")
-    df_temp.to_csv(str_io, sep=",",index=False)
+    df.to_csv(str_io, sep=",",index=False)
 
     mem = io.BytesIO()
     mem.write(str_io.getvalue().encode('utf-8'))
@@ -1914,14 +1910,6 @@ def download_weather_data():
                                                          filedata)
     weather, info = pvtoolslib.get_s3_weather_data(
         filedata_closest['filename'].iloc[0])
-
-
-    #
-    # df = weather
-
-    #Create DF
-    # d = {'col1': [1, 2,3], 'col2': [3, 4,5]}
-    # df = pd.DataFrame(data=d)
 
 
     #Convert DF

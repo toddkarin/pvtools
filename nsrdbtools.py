@@ -124,6 +124,62 @@ def inspect_database(root_path):
 
 
 
+def inspect_compressed_database(glob_str):
+    """
+    Build filename list from directory.
+
+    Examples
+
+    glob_str = '/Users/toddkarin/Documents/NSRDB_compressed/*'
+    filedata = nsrdbtools.inspect_compressed_database(glob_str)
+
+
+    Returns
+    -------
+
+    """
+
+
+    location_id = []
+    lat = []
+    lon = []
+
+
+    # filename = get_s3_files()
+    # base_dir = '/Users/toddkarin/Documents/NSRDB_compressed/*'
+    filename = glob.glob(glob_str)
+
+
+    # Extract location id, lat and lon.
+    for key in filename:
+        if key.endswith('.npz'):
+
+            path_parts = os.path.split(key)
+
+            filename_parts = path_parts[-1].split('_')
+
+            location_id.append(int(filename_parts[0]))
+            lat.append(float(filename_parts[1]))
+            lon.append(float(filename_parts[2][0:-4]))
+
+
+    # Create a DataFrame
+    filedata = pd.DataFrame.from_dict({
+        'location_id': location_id,
+        'lat': lat,
+        'lon': lon,
+        'filename': filename,
+    })
+
+    # Redefine the index.
+    filedata.index = range(filedata.__len__())
+
+
+    return filedata
+
+
+
+
 
 def inspect_pickle_database(root_path):
     """Build database for NSRDB files
@@ -199,18 +255,6 @@ def inspect_pickle_database(root_path):
     filedata.index = range(filedata.__len__())
     return filedata
 
-def import_weather_pickle(fullpath):
-    df = pd.read_pickle(fullpath, compression='xz')
-
-    # print(data_filename)
-    weather = pd.DataFrame.from_dict({
-        'dni': df['dni'].astype(np.float64),
-        'dhi': df['dhi'].astype(np.float64),
-        'ghi': df['ghi'].astype(np.float64),
-        'temp_air': df['temp_air'].astype(np.float64),
-        'wind_speed': df['wind_speed'].astype(np.float64)})
-
-    return weather
 
 
 def import_csv(filename):
@@ -233,7 +277,11 @@ def import_csv(filename):
 
     # filename = '1ad06643cad4eeb947f3de02e9a0d6d7/128364_38.29_-122.14_1998.csv'
 
-    info = pd.read_csv(filename, nrows=1)
+    info_df = pd.read_csv(filename, nrows=1)
+    info = {}
+    for p in info_df:
+        info[p] = info_df[p].iloc[0]
+
     # See metadata for specified properties, e.g., timezone and elevation
     # timezone, elevation = info['Local Time Zone'], info['Elevation']
 
@@ -373,6 +421,8 @@ def build_nsrdb_link_list(filename):
 
     return url_list
 
+
+
 def download_nsrdb_link_list(url_list, sleep=0.2):
     """
     This simple script opens a list of urls for downloading files.
@@ -391,6 +441,111 @@ def download_nsrdb_link_list(url_list, sleep=0.2):
         webbrowser.open(url_list[j])
         time.sleep(sleep)
 
+
+
+
+def load_npz(filename):
+    """
+    Load npz file from a local file
+
+    Parameters
+    ----------
+    filename
+
+    Returns
+    -------
+
+    """
+    #
+    data = {}
+    with np.load(filename) as arr:
+        for var in list(arr.keys()):
+            data[var] = arr[var]
+    return data
+
+
+def get_local_weather_data(filename):
+    """
+
+    Load a local compressed weather datafile.
+
+    Parameters
+    ----------
+    filename
+
+    Returns
+    -------
+
+    """
+
+
+    data = load_npz(filename)
+    return build_weather_info(data)
+
+
+
+def build_weather_info(info):
+    """
+
+    Parameters
+    ----------
+    info
+
+    Returns
+    -------
+
+    """
+
+    for f in info:
+        try:
+            if info[f].dtype == np.dtype('<U5'):
+                info[f] = str(info[f])
+            elif info[f].dtype == np.dtype('<U6'):
+                info[f] = str(info[f])
+            elif info[f].dtype == np.dtype('int64'):
+                info[f] = int(info[f])
+            elif info[f].dtype == np.dtype('float64'):
+                info[f] = float(info[f])
+
+
+        except:
+            print(f)
+
+
+    weather = pd.DataFrame.from_dict({
+        'year': info['year'],
+        'month': info['month'],
+        'day': info['day'],
+        'hour': info['hour'],
+        'minute': info['minute'],
+        'dni': info['dni'],
+        'ghi': info['ghi'],
+        'dhi': info['dhi'],
+        'temp_air': info['temp_air'],
+        'wind_speed': info['wind_speed'],
+    }
+    )
+
+    weather.index = pd.to_datetime(
+        pd.DataFrame.from_dict({
+            'year': info['year'],
+            'month': info['month'],
+            'day': info['day'],
+            'hour': info['hour'],
+            'minute': info['minute'],
+        })
+    )
+
+    weather.index = weather.index.tz_localize(
+        pytz.FixedOffset(float(info['local_time_zone'] * 60)))
+
+    # Remove long vectors from info.
+    for f in list(info.keys()):
+        if type(info[f]) == type(np.array([0])):
+            del info[f]
+
+
+    return weather, info
 
 def haversine_distance(lat1, lon1, lat2, lon2):
     p = 0.017453292519943295

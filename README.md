@@ -25,14 +25,15 @@ We also log each time the 'calculate' button is pressed, but do not record any m
 
 # Todo
 
-- Add pvtools@gmail.com contact.
+- Add method suggested by Cliff Hansen.
+- Change name of mean yearly min drybulb to exactly correspond to NEC.
 - Document! 
 - make input fields more obvious.
 - Check AWS bucket region to minimize latency.
 - Load default .npz file into github in order to speed up the default calculation slightly.
 - Remove mapbox access token from code.
 - Add click callback for map. "If I click the NREL location just outside of Golden, CO, I get the Lat and long from the blue dot. It did not autofill that onto the entry boxes. Was it supposed to?"
-- Add pvlib icon.
+- Jinja2 ~> 2.10.1. to fix security vulnerability.
 
 # Install Notes
 
