@@ -7,6 +7,9 @@ test*
 *.npz
 .idea
 
+old*
+
+
 # Mac
 .DS_Store
 
