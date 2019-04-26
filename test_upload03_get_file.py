@@ -20,3 +20,4 @@ data = pvtoolslib.get_s3_npz(filename)
 weather, info = pvtoolslib.get_s3_weather_data(filename)
 
 
+print(info)

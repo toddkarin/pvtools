@@ -15,13 +15,16 @@ import pvlib
 # matplotlib.use('TkAgg')
 # import matplotlib.pyplot as plt
 import pandas as pd
+import datetime
+
 
 # Parameters entering into Voc calculation:
 
 cec_modules = pvlib.pvsystem.retrieve_sam('CeCMod')
 
-vocmaxlib_version = '0.1.1'
+vocmaxlib_version = '0.1.2'
 
+# Descriptions of hte various parameters used in the calculation.
 explain = {
     'Voco': 'Open circuit voltage at reference conditions, in V',
     'Bvoco': 'Temperature dependence of open circuit voltage, in V/C',
@@ -98,44 +101,35 @@ def simulate_system(weather, info, module_parameters,
     info : dict
         Dictionary containing location information with fields:
             'Latitude': latitude in degrees
+
             'Longitude': longitude in degrees.
+
+            'albedo' : (optional) albedo of ground. default 0.25
+
+        Other fields may be included in info as well.
+
 
     module_parameters : dict
         Dict or Series containing the fields diescribing the module
 
-            'alpha_sc': The short-circuit current temperature coefficient of the
-            module in units of A/C.
+            'Voco' :
 
-            'a_ref': The product of the usual diode ideality factor (n,
-            unitless), number of cells in series (Ns), and cell thermal voltage
-            at reference conditions, in units of V
+            'Bvoco' :
 
-            'I_L_ref': The light-generated current (or photocurrent) at reference
-            conditions, in amperes.
+            'cells_in_series'
 
-            'I_o_ref': The dark or diode reverse saturation current at reference
-            conditions, in amperes.
+            'n_diode'
 
-            'R_sh_ref': The shunt resistance at reference conditions, in ohms.
+            'Mbvoc'
 
-            'R_s': The series resistance at reference conditions, in ohms.
+            'FD'
 
-            'Adjust': The adjustment to the temperature coefficient for short
-            circuit current, in percent. This parameter is only used if model
-            is 'cec'.
+            'iv_model'
 
-            'aoi_model': (optional). Model for angle of incidence losses (
-            reflection losses), can be 'ashrae' or 'no_loss'. default is
-            'no_loss'.
-
-            'ashrae_iam_param': (optional). If aoi_model is 'ashrae', specify
-            the ashrae coefficient. Typical value is 0.05.
-
-            'model' : str
-                Method to use for calculation, can be 'cec' or 'desoto'
+            'aoi_model' -
 
     racking_parameters : dict
-        dictionary describing the racking setup. Contains fields
+        dictionary describing the racking setup. Contains fields:
 
             'racking_type' : str. Can be 'fixed_tilt' for a stationary PV system
             or 'single_axis' for a single axis tracker.
@@ -239,6 +233,14 @@ def simulate_system(weather, info, module_parameters,
                                        longitude=info['Longitude'])
 
 
+    if not 'albedo' in info:
+        info['albedo'] = 0.25
+
+
+
+    # Add module parameters if some aren't specified.
+    module_parameters = add_default_module_params(module_parameters)
+
     # #
     # start_time = time.time()
     # # This is the most time consuming step
@@ -291,7 +293,8 @@ def simulate_system(weather, info, module_parameters,
         weather['ghi'],
         weather['dhi'],
         model='haydavies',
-        dni_extra=dni_extra)
+        dni_extra = dni_extra,
+        albedo= info['albedo'])
 
     if racking_parameters['racking_type'] == 'fixed_tilt':
         aoi = pvlib.irradiance.aoi(surface_tilt, surface_azimuth,
@@ -324,8 +327,7 @@ def simulate_system(weather, info, module_parameters,
         aoi_loss = 1
     elif module_parameters['aoi_model'] == 'ashrae':
         aoi_loss = pvlib.pvsystem.ashraeiam(aoi,
-                                            b=module_parameters[
-                                                'ashrae_iam_param'])
+                            b=module_parameters['ashrae_iam_param'])
     else:
         raise Exception('aoi_model must be ashrae or no_loss')
 
@@ -349,6 +351,47 @@ def simulate_system(weather, info, module_parameters,
 
 
 
+def add_default_module_params(module_parameters):
+    """
+
+    Adds default fields to the module_parameters dictionary.
+
+    Parameters
+    ----------
+    module_parameters : dict
+
+
+    Returns
+    -------
+    module_parameters : dict
+        Same as input, except default values are added for the following fields:
+
+        'Mbvoc' : 0
+
+        'FD' : 1
+
+        'iv_model' : 'sapm'
+
+        'aoi_model' : 'no_loss'
+
+
+
+    """
+
+
+    if not 'Mbvoc' in module_parameters:
+        module_parameters['Mbvoc'] = 0
+
+    if not 'FD' in module_parameters:
+        module_parameters['FD'] = 1
+
+    if not 'iv_model' in module_parameters:
+        module_parameters['iv_model'] = 'sapm'
+
+    if not 'aoi_model' in module_parameters:
+        module_parameters['aoi_model'] = 'no_loss'
+
+    return module_parameters
 
 
 def make_voc_summary(df,module_parameters,max_string_voltage=1500):
@@ -367,8 +410,9 @@ def make_voc_summary(df,module_parameters,max_string_voltage=1500):
 
 
     voc_summary = pd.DataFrame(
-        columns=['Conditions', 'v_oc', 'max_string_voltage', 'string_length','long_note'],
-        index=['P99.5', 'Norm_P99.5', 'Hist', 'Trad','Day'])
+        columns=['Conditions', 'v_oc', 'max_string_voltage', 'string_length',
+                 'Cell Temperature','POA Irradiance','long_note'],
+        index=['P99.5', 'Hist', 'Trad','Day'])
 
     mean_yearly_min_temp = calculate_mean_yearly_min_temp(df.index,df['temp_air'])
     mean_yearly_min_day_temp = calculate_mean_yearly_min_temp(df.index[df['ghi']>150],
@@ -383,13 +427,13 @@ def make_voc_summary(df,module_parameters,max_string_voltage=1500):
                                         module_parameters),
         'Day': calculate_voc(1000, mean_yearly_min_day_temp,
                                         module_parameters),
-        'Norm_P99.5':
-            np.percentile(
-                calculate_normal_voc(df['dni'],
-                                               df['dhi'],
-                                               df['temp_air'],
-                                               module_parameters)
-                , 99.5),
+        # 'Norm_P99.5':
+        #     np.percentile(
+        #         calculate_normal_voc(df['dni'],
+        #                                        df['dhi'],
+        #                                        df['temp_air'],
+        #                                        module_parameters)
+        #         , 99.5),
         'P99.5': np.percentile(df['v_oc'], 99.5),
     }
     conditions = {
@@ -397,13 +441,33 @@ def make_voc_summary(df,module_parameters,max_string_voltage=1500):
         'Hist': 'Historical Maximum Voc',
         'Trad': 'Voc at 1 sun and mean yearly min ambient temperature',
         'Day': 'Voc at 1 sun and mean yearly minimum daytime (GHI>150 W/m2) temperature',
-        'Norm_P99.5': 'P99.5 Voc assuming module normal to sun',
+        # 'Norm_P99.5': 'P99.5 Voc assuming module normal to sun',
     }
+
+    s_p99p5 = get_temp_irradiance_for_voc_percentile(df,percentile=99.5)
+    s_p100 = get_temp_irradiance_for_voc_percentile(df,percentile=100,
+                                                     cushion=0.0001)
+    cell_temp = {
+        'P99.5': s_p99p5['temp_cell'],
+        'Day': mean_yearly_min_day_temp,
+        'Trad': mean_yearly_min_temp,
+        'Hist': s_p100['temp_cell']
+    }
+    poa_irradiance = {
+        'P99.5': s_p99p5['effective_irradiance'],
+        'Day': 1000,
+        'Trad': 1000,
+        'Hist': s_p100['effective_irradiance'],
+    }
+
 
 
     voc_summary['v_oc'] = voc_summary.index.map(voc_values)
     voc_summary['Conditions'] = voc_summary.index.map(conditions)
     voc_summary['max_string_voltage'] = max_string_voltage
+    voc_summary['POA Irradiance'] = voc_summary.index.map(poa_irradiance)
+    voc_summary['Cell Temperature'] = voc_summary.index.map(cell_temp)
+
     voc_summary['string_length'] = voc_summary['v_oc'].map(
         lambda x: voc_to_string_length(x, max_string_voltage))
 
@@ -430,28 +494,45 @@ def make_voc_summary(df,module_parameters,max_string_voltage=1500):
                 'Trad Voc: {:.3f}<br>'.format(voc_values['Trad']) +\
                 'Maximum String Length: {:.0f}'.format(voc_summary['string_length']['Trad']),
 
-        'Norm_P99.5': "Normal Voc, 99.5 percentile Voc value<br>".format(voc_values['Norm_P99.5']) +\
-                      "assuming array always oriented normal to sun.<br>" +\
-                      "Norm_P99.5 Voc: {:.3f}<br>".format(voc_values['Norm_P99.5']) +\
-                      "Maximum String Length: {:.0f}".format(voc_summary['string_length']['Norm_P99.5'])
+        # 'Norm_P99.5': "Normal Voc, 99.5 percentile Voc value<br>".format(voc_values['Norm_P99.5']) +\
+        #               "assuming array always oriented normal to sun.<br>" +\
+        #               "Norm_P99.5 Voc: {:.3f}<br>".format(voc_values['Norm_P99.5']) +\
+        #               "Maximum String Length: {:.0f}".format(voc_summary['string_length']['Norm_P99.5'])
     }
     short_note = {
         'P99.5': "Recommended 690.7(A)(3) value for string length.",
 
         'Hist': 'Conservative 690.7(A)(3) value for string length.',
 
-        'Day':  'mean yearly minimum daytime (GHI>150 W/m^2) dry bulb temperature: {:.1f} C.<br>'.format(mean_yearly_min_day_temp) +\
-                'Recommended 690.7(A)(1) Value',
+        'Day':  'Traditional design using daytime temp (GHI>150 W/m^2)',
 
-        'Trad': 'mean yearly minimum dry bulb temperature: {:.1f} C.<br>'.format(mean_yearly_min_temp),
+        'Trad': 'Traditional design',
 
-        'Norm_P99.5': ""
+        # 'Norm_P99.5': ""
     }
 
     voc_summary['long_note'] = voc_summary.index.map(long_note)
     voc_summary['short_note'] = voc_summary.index.map(short_note)
 
     return voc_summary
+
+
+def scale_to_hours_per_year(y,info):
+    return y / info['timedelta_in_years'] * info['interval_in_hours']
+
+
+def make_voc_histogram(df,info,number_bins=400):
+
+    # Voc histogram
+    voc_hist_y_raw, voc_hist_x_raw = np.histogram(df['v_oc'],
+                        bins=np.linspace(df['v_oc'].max() * 0.6,
+                                         df['v_oc'].max() + 1, number_bins))
+
+    voc_hist_y = scale_to_hours_per_year(voc_hist_y_raw,info)[1:]
+    voc_hist_x = voc_hist_x_raw[1:-1]
+
+    return voc_hist_x, voc_hist_y
+
 
 
 def make_simulation_summary(df, info,module_parameters,racking_parameters,
@@ -483,9 +564,13 @@ def make_simulation_summary(df, info,module_parameters,racking_parameters,
         info['local_time_zone'] = info['Time Zone']
 
     # extra_parameters = calculate_extra_module_parameters(module_parameters)
+    voc_hist_x, voc_hist_y = make_voc_histogram(df, info,number_bins=200)
 
+    pd.DataFrame({'Voc': voc_hist_x, 'hours per year': voc_hist_y}).to_csv(
+        index=False)
 
     summary = \
+        'Simulation Run Date,' + str(datetime.datetime.now()) + '\n\n' + \
         'Weather data,\n' + \
         pd.Series(info)[
             ['Source', 'Latitude', 'Longitude', 'Location_ID', 'local_time_zone',
@@ -501,7 +586,12 @@ def make_simulation_summary(df, info,module_parameters,racking_parameters,
         'Max String Voltage,' + str(max_string_voltage) + '\n' + \
         'vocmaxlib Version,' + vocmaxlib_version + '\n' + \
         '\nKey Voc Values\n' + \
-        voc_summary.to_csv()
+        voc_summary.to_csv() + \
+        '\nVoc Histogram\n' + \
+        pd.DataFrame(
+            {'Voc': voc_hist_x,
+             'hours per year': voc_hist_y}
+        ).to_csv(index=False)
 
     return summary
 
@@ -532,7 +622,7 @@ def calculate_normal_voc(poa_direct, poa_diffuse, temp_cell, module_parameters,
         FD=FD
         )
     v_oc = calculate_voc(effective_irradiance, temp_cell,
-                                   module_parameters)
+                         module_parameters)
     return v_oc
 
 
@@ -984,6 +1074,39 @@ def calculate_mean_yearly_min_temp(datetimevec, temperature):
 
 
     return np.mean(yearly_min_temp)
+
+def get_temp_irradiance_for_voc_percentile(df, percentile=99.5, cushion = 0.0025):
+    """
+
+    Find the lowest temperature and associated irradiance that produces the
+    percentile value of Voc.
+
+    Parameters
+    ----------
+    df : dataframe
+        Dataframe containing 'v_oc'
+
+    percentile
+
+    cushion : numeric
+
+
+    Returns
+    -------
+    Series
+        Lowest
+    """
+
+
+    voc_percentile = np.percentile(df['v_oc'], percentile)
+
+    df_close = df[df['v_oc'] > voc_percentile * (1- cushion)]
+    df_close = df_close[df_close['v_oc'] < voc_percentile * (1+cushion)]
+
+    t99p5 = df_close['temp_air'].idxmin()
+
+
+    return df.iloc[df.index.get_loc(t99p5)]
 
 
 def voc_to_string_length(voc,max_string_voltage):

@@ -289,7 +289,7 @@ layout = dbc.Container([
         dbc.CardBody([
             dbc.Label("""To select module parameters from a library of common 
             modules, select 'Library Lookup'. Or select 'manual entry' to 
-            enter the parameters for the De Soto model [5]. 
+            enter the parameters manually. 
             
             """),
             dbc.Tabs([
@@ -1399,8 +1399,13 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         lambda s : s.replace('<br>','.  '))
     voc_summary_table['Voc'] = voc_summary_table['Voc'].apply(
         lambda s: '{:2.2f}'.format(s))
+    voc_summary_table['Cell Temperature'] = voc_summary_table['Cell Temperature'].apply(
+        lambda s: '{:2.1f}'.format(s))
+    voc_summary_table['POA Irradiance'] = voc_summary_table['POA Irradiance'].apply(
+        lambda s: '{:4.0f}'.format(s))
 
-    voc_summary_table = voc_summary_table[['Voc','Max String Voltage','String Length','Note']]
+    voc_summary_table = voc_summary_table[['Voc','Max String Voltage',
+                                           'String Length','Cell Temperature','POA Irradiance','Note']]
 
     summary_text = vocmaxlib.make_simulation_summary(df, info,
                                                  module,
@@ -1538,6 +1543,12 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                 )
             }
         ),
+        html.P(''),
+        html.P("""The table below shows the recommended Voc values, voltage 
+        in Volts, cell temperature in Celsius and plane-of-array (POA) 
+        irradiance in W/m^2. 
+
+        """),
         html.Div([
             dbc.Table.from_dataframe(voc_summary_table,
                                      striped=False,
@@ -1548,72 +1559,42 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                                      style={'font-size': '0.8rem'}),
             html.Details([
                 html.Summary('Details on index names'),
-                html.P("""The string voltage calculation provides several standard 
-                 values for designing string lengths. The values are: 
+                dcc.Markdown("""The string voltage calculation provides 
+                several standard values for designing string lengths. For 
+                P99.5 and Hist, we provide the lowest temperature during the 
+                simulation time and the associated plane-of-array (POA) 
+                irradiance that produces the given voltage. The various 
+                standard named values for Voc are: 
+                
+                - **P99.5** is the 99.5 percentile Voc value over the 
+                simulation time. This is the recommended value of Voc to use 
+                for designing PV string lengths. Statistically Voc will 
+                exceed this value only 0.5% of the year. Suppose that open 
+                circuit conditions occur 1% of the time randomly. In this 
+                case the probability that the weather and system design 
+                maintain the system voltage under the standard limit is 
+                99.995%, i.e. max system voltage would statistically be 
+                exceeded for 26 minutes per year. 
+                
+                - **Hist** is the historical maximum Voc over the {:.0f} 
+                years of simulation. 
+                
+                - **Trad** is the traditional value used for maximum Voc. 
+                This is found using the mean minimum yearly dry bulb 
+                temperature (i.e. find the minimum temperature in each year 
+                and take the mean of those values). The Voc is calculated 
+                assuming 1 sun irradiance (1000 W/m^2), the mean minimum 
+                yearly dry bulb temperature and the module paramaeters.
+                
+                - **Day** is similar to the trad value, except the mean 
+                minimum yearly daytime dry bulb temperature is used as the 
+                cell temperature for calculating Voc. Daytime is defined as 
+                GHI greater than 150 W/m^2. The Voc is calculated assuming 1 
+                sun irradiance (1000 W/m^2), the mean minimum yearly daytime 
+                dry bulb temperature and the module paramaeters. 
     
-                 """),
-                html.Div([
-                    html.Ul([
-                        html.Li(
-                            dcc.Markdown(
-                                """**P99.5** is the 99.5 percentile Voc value over the 
-                                simulation time. Statistically Voc will exceed this value 
-                                only 0.5% of the year. Suppose that open circuit 
-                                conditions occur 1% of the time randomly. In this case 
-                                the probability that the weather and system design 
-                                maintain the system voltage under the standard limit is 
-                                99.995%, i.e. max system voltage would statistically be 
-                                exceeded for 26 minutes per year. 
-       
-                                """
-                            )),
-                        html.Li(
-                            dcc.Markdown(
-                                """**Hist** is the historical maximum Voc over the {:.0f} 
-                                years of simulation. 
-    
-                                """.format(info['timedelta_in_years'])
-                            )),
-                        html.Li(
-                            dcc.Markdown(
-                                """**Norm_P99.5** is the 99.5 percentile Voc value 
-                                when assuming that the PV array is always oriented 
-                                normal to the sun. This value can be easily computed 
-                                given weather data (DNI + DHI) and the module 
-                                parameters since angle-of-incidence calculations are 
-                                avoided. This would also be the value to use in the 
-                                case of two-axis trackers. 
-    
-                                """.format(info['timedelta_in_years'])
-                            )),
-                        html.Li(
-                            dcc.Markdown(
-                                """**Trad** is the traditional value used for maximum 
-                                Voc. This is found using the mean minimum yearly dry bulb 
-                                temperature (i.e. find the minimum temperature in each 
-                                year and take the mean of those values). The Voc is 
-                                calculated assuming 1 sun irradiance (1000 W/m^2), 
-                                the mean minimum yearly dry bulb temperature and the 
-                                module paramaeters. 
-       
-                                """
-                            )),
-                        html.Li(
-                            dcc.Markdown(
-                                """**Day** is similar to the trad value, except the 
-                                mean minimum yearly daytime dry bulb temperature is 
-                                used as the cell temperature for calculating Voc. 
-                                Daytime is defined as GHI greater than 150 W/m^2. The 
-                                Voc is calculated assuming 1 sun irradiance (1000 
-                                W/m^2), the mean minimum yearly daytime dry bulb 
-                                temperature and the module paramaeters. 
-    
-                                """
-                            )),
-
-                    ])
-
-                ], style={'marginLeft': 50}),
+                 """.replace('    ','')
+                ),
             ]),
         ],style={'margin-bottom':30}),
         html.P("""Figure 2 shows a histogram of the air and cell temperature. 

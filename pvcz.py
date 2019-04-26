@@ -1,33 +1,83 @@
-# import dash_core_components as dcc
-# import dash_html_components as html
-import dash_bootstrap_components as dbc
-#
-import app as app
-
-#
-# layout = dbc.Container([
-# 	html.Div(['Under Construction'])
-# 	])
-
 
 import dash
-from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
 import dash_html_components as html
-# import dash_table_experiments as dte
-from flask import send_file
-import io
-import flask
+import dash_bootstrap_components as dbc
+# import dash_table
+import plotly.colors
+import plotly.graph_objs as go
+# import plotly.plotly as py
+# from flask_caching import Cache
+from dash.dependencies import Input, Output, State
+import vocmaxlib
+import numpy as np
+import pvlib
+import nsrdbtools
 import pandas as pd
+# import uuid
+# import os
+# import flask
+# import json
+# import time
+import datetime
+import io
+import pvtoolslib
+import urllib
 
+
+from app import app
 
 # app = dash.Dash()
 layout = html.Div(children=[
     html.A("download csv", href="/download_csv/"),
     dbc.Button("Download csv",id='download-button',n_clicks=0),
+    dbc.Input(id='an_input', value=12345, type='number',
+              style={'max-width': 200}),
+
+dcc.Dropdown(
+        id='racking_model_xx',
+        options=[
+            {'label': 'open rack cell glassback',
+             'value': 'open_rack_cell_glassback'},
+            {'label': 'roof mount cell glassback',
+             'value': 'roof_mount_cell_glassback'},
+            {'label': 'insulated back polymerback',
+             'value': 'insulated_back_polymerback'},
+            {'label': 'open rack polymer thinfilm steel',
+             'value': 'open_rack_polymer_thinfilm_steel'},
+            {'label': '22x concentrator tracker',
+             'value': '22x_concentrator_tracker'}
+        ],
+        value='open_rack_cell_glassback',
+        style={'max-width': 500}
+    ),
+    # dcc.Dropdown(
+    #     id='dropdown_unique',
+    #     options=pvtoolslib.cec_module_dropdown_list,
+    #     value=pvtoolslib.cec_module_dropdown_list[0]['value'],
+    #     style={'max-width': 500}
+    # ),
 ])
 
 
+@app.callback([Output('an_input', 'value')
+               ],
+              [Input('racking_model_xx', 'value')])
+def update_Voco(racking_model):
+    print('Racking model changed')
+    return 5
+
+#
+#
+# @app.callback([Output('an_input', 'value')
+#                ],
+#               [Input('dropdown_unique', 'value')])
+# def update_this_div(module):
+#     print('Racking model changed')
+#     return 5
+
+#
+# @app.callback(
 #
 # @app.callback([],
 #               [Input('download-button','n_clicks')])
