@@ -4,7 +4,6 @@ out.csv
 *.pyc
 .env
 test*
-*.npz
 .idea
 
 test*

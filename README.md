@@ -27,11 +27,12 @@ We also log each time the 'calculate' button is pressed, but do not record any m
 - Document! 
 - Remove mapbox access token from code.
 - Add click callback for map.
+- Fix references.
+
+# Change log
+
 - Jinja2 ~> 2.10.1. to fix security vulnerability.
 
-# Version history
-
-- V1.0
 
 # Install Notes
 
