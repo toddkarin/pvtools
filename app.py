@@ -8,7 +8,13 @@ import dash_bootstrap_components as dbc
 # external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 # app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = dash.Dash(__name__,
+                external_stylesheets=[dbc.themes.BOOTSTRAP],
+                meta_tags=[{
+                    'name': "google-site-verification",
+                    'content': "S1RjgJU6ZoVdko93JeLNEnn5viVxN1cXL2me3LB9J5I",
+                }]
+                )
 
 server = app.server
 server.secret_key = os.environ.get('secret_key', 'secret')
@@ -19,6 +25,9 @@ app.title = 'PVTOOLS'
 
 # For google analytics to work:
 app.scripts.config.serve_locally = True
+
+# Add meta tag for google search
+
 
 
 # app.scripts.append_script({
