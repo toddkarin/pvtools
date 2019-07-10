@@ -34,7 +34,7 @@ from app import app
 server = app.server
 
 # Load layouts for different pages
-import home, pvcz, about, string_length_calculator
+import home, pvcz, about, string_length_calculator, pv_climate_stressors
 
 
 app.layout = html.Div([
@@ -99,6 +99,8 @@ def display_page(pathname):
         body = about.layout
     elif pathname == '/home':
         body = home.layout
+    elif pathname == '/pv-climate-stressors':
+        body = pv_climate_stressors.layout
     elif pathname == '/':
         body = home.layout
     else:
