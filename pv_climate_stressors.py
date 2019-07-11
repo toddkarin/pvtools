@@ -52,8 +52,11 @@ layout = dbc.Container([
         'textAlign': 'center'}),
     html.Hr(),
     html.H2('Overview'),
-    dcc.Markdown("""This is a test deployment of a map showing the 
-    photovoltaic climate zones. 
+    dcc.Markdown("""Environmental stress determines the degradation rates and 
+    modes for a solar photovoltaic (PV) system. This page shows environmental 
+    stressors for PV. By choosing thresholds on temperature and humidity, 
+    we define photovoltaic climate zones (PVCZ), showing which locations are 
+    expected to show higher degradation rates for PV. 
 
     **We would highly appreciate any feedback** (praise, bug reports, 
     suggestions, etc.). Please contact us at pvtools.lbl@gmail.com. 
@@ -77,7 +80,8 @@ layout = dbc.Container([
             dcc.Markdown("""
 
             ### Summary
-
+            The variable definitions and methods are described in 
+            a [conference manuscript](https://www.researchgate.net/publication/334401420_Photovoltaic_Degradation_Climate_Zones). 
 
             ### Who we are
 
@@ -117,8 +121,8 @@ layout = dbc.Container([
                         dbc.Input(id='pvcz-lat', value='37.88', type='text'),
                         dbc.Label('Longitude'),
                         dbc.Input(id='pvcz-lon', value='-122.25', type='text'),
-                        dbc.FormText(id='closest-message',
-                                 children='Closest point shown on map'),
+                        # dbc.FormText(id='closest-message',
+                        #          children='Closest point shown on map'),
                         # html.P(''),
                         # html.Div([
                         # dbc.Button(id='get-weather', n_clicks=0,
@@ -135,71 +139,99 @@ layout = dbc.Container([
         ]),
     # html.H2('Simulation Input'),
     html.P(''),
-    html.H2('Photovoltaic Equivalent Temperature'),
-    dcc.Graph(id='pvcz-map',
-              figure={
-                  'data': [
-                      go.Scattermapbox(
-                          lat=pvcz.get_pvcz_data()['lat'],
-                          lon=pvcz.get_pvcz_data()['lon'],
-                          mode='markers',
-                          marker=dict(
-                              color = pvcz.get_pvcz_data()['T_equiv_rack'],
-                              colorscale=[
-                                  [0, "rgb(150,0,90)"],
-                                  [0.125, "rgb(0, 0, 200)"],
-                                  [0.25, "rgb(0, 25, 255)"],
-                                  [0.375, "rgb(0, 152, 255)"],
-                                  [0.5, "rgb(44, 255, 150)"],
-                                  [0.625, "rgb(151, 255, 0)"],
-                                  [0.75, "rgb(255, 234, 0)"],
-                                  [0.875, "rgb(255, 111, 0)"],
-                                  [1, "rgb(255, 0, 0)"]
-                              ],
-                              size=6
-                          ),
-                          text='T_equiv_rack: ' + np.round(pvcz.get_pvcz_data()['T_equiv_rack'],2).astype(str) + ' C',
-                          name='Database location'
-                      ),
-                  ],
-                  'layout': go.Layout(
-                      # autosize=True,
-                      width=1000,
-                      height=700,
-                      margin={'l': 10, 'b': 10, 't': 0, 'r': 0},
-                      hovermode='closest',
-                      mapbox=dict(
-                          accesstoken='pk.eyJ1IjoidG9kZGthcmluIiwiYSI6Ik1aSndibmcifQ.hwkbjcZevafx2ApulodXaw',
-                          bearing=0,
-                          center=dict(
-                              lat=float(40),
-                              lon=float(-100)
-                          ),
-                          pitch=0,
-                          zoom=2,
-                          style='light'
-                      ),
-                      legend=dict(
-                          x=0,
-                          y=1,
-                          traceorder='normal',
-                          font=dict(
-                              family='sans-serif',
-                              size=12,
-                              color='#000'
-                          ),
-                          bgcolor='#E2E2E2',
-                          bordercolor='#FFFFFF',
-                          borderwidth=2
-                      )
-                  )}
+    dbc.Card([
+        dbc.CardHeader('PV Climate Stress Maps'),
+        dbc.CardBody([
+            html.P('Select stressor to plot'),
+            dcc.Dropdown(
+                id='pvcz-map-select',
+                options=pvtoolslib.pvcz_stressor_dropdown_list,
+                value='T_equiv_rack',
+                style={'max-width': 500}
+            ),
+            html.P(''),
+            dcc.Loading(id="loading-1", children=[html.Div(id="loading-output-1")], type="default"),
+            # dcc.Graph(id='pvcz-map')
 
-              )
-
-])
+            ])
+        ])
+    ])
 
 # app.layout = layout
 
+
+@app.callback(
+    Output("loading-output-1", "children"),
+    [Input("pvcz-map-select", "value")]
+)
+def update_pvcz_map(param):
+    # return
+
+
+
+    figure = {
+        'data': [
+            go.Scattermapbox(
+                lat=pvtoolslib.pvcz_df['lat'],
+                lon=pvtoolslib.pvcz_df['lon'],
+                mode='markers',
+                marker=dict(
+                    color=pvtoolslib.pvcz_df[param],
+                    colorscale=[
+                        [0, "rgb(150,0,90)"],
+                        [0.125, "rgb(0, 0, 200)"],
+                        [0.25, "rgb(0, 25, 255)"],
+                        [0.375, "rgb(0, 152, 255)"],
+                        [0.5, "rgb(44, 255, 150)"],
+                        [0.625, "rgb(151, 255, 0)"],
+                        [0.75, "rgb(255, 234, 0)"],
+                        [0.875, "rgb(255, 111, 0)"],
+                        [1, "rgb(255, 0, 0)"]
+                    ],
+                    size=6,
+                    colorbar=dict(
+                        title=dict(
+                            text=pvtoolslib.pvcz_legend_str[param],
+                            side='right'),
+                    )
+                ),
+                text= param + ': ' + np.round(pvtoolslib.pvcz_df[param], 2).astype(str) + ' C',
+                name='Database location'
+            ),
+        ],
+        'layout': go.Layout(
+            autosize=True,
+            # width=1000,
+            # height=700,
+            margin={'l': 10, 'b': 10, 't': 0, 'r': 0},
+            hovermode='closest',
+            mapbox=dict(
+                accesstoken='pk.eyJ1IjoidG9kZGthcmluIiwiYSI6Ik1aSndibmcifQ.hwkbjcZevafx2ApulodXaw',
+                bearing=0,
+                center=dict(
+                    lat=float(40),
+                    lon=float(-100)
+                ),
+                pitch=0,
+                zoom=2,
+                style='light'
+            ),
+            legend=dict(
+                x=0,
+                y=1,
+                traceorder='normal',
+                font=dict(
+                    family='sans-serif',
+                    size=12,
+                    color='#000'
+                ),
+                bgcolor='#E2E2E2',
+                bordercolor='#FFFFFF',
+                borderwidth=2
+            )
+        )}
+
+    return dcc.Graph(id='pvcz-map',figure=figure,config=dict(scrollZoom=True))
 
 @app.callback(
     Output("pvcz-details-collapse", "is_open"),
@@ -236,11 +268,11 @@ def get_stressors(lat,lon):
                                            df['lon'])
 
     # Get the stressor data from this location
-    location_df = pd.DataFrame(data={'Parameter': df.keys(),
+    location_df = pd.DataFrame(data={'Parameter': [pvtoolslib.pvcz_legend_str[p] for p in df.keys()],
                                      'Value': df.iloc[closest_index]})
     for p in ['T_equiv_rack','T_equiv_roof','specific_humidity_mean','T_velocity','GHI_mean','wind_speed','T_ambient_min']:
         location_df['Value'][p] = '{:.2f}'.format(location_df['Value'][p])
-    print(location_df)
+
 
     return dbc.Table.from_dataframe(location_df,
                                          striped=False,
@@ -248,7 +280,8 @@ def get_stressors(lat,lon):
                                          hover=True,
                                          index=False,
                                          size='sm',
-                                         style={'font-size':'0.8rem'})
+                                         # style={'font-size':'0.8rem'}
+                                    )
 
 #
 # if __name__ == '__main__':

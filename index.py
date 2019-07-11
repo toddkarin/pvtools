@@ -73,7 +73,7 @@ navbar = dbc.NavbarSimple(
             label="Tools",
             children=[
                 dbc.DropdownMenuItem("String Length Calculator",href='/string-length-calculator'),
-                # dbc.DropdownMenuItem("Photovoltaic Climate Zones"),
+                dbc.DropdownMenuItem("Photovoltaic Climate Stressors",href='/pv-climate-stressors'),
                 # dbc.DropdownMenuItem(divider=True),
                 # dbc.DropdownMenuItem("Documentation"),
             ],

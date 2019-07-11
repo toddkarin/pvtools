@@ -66,7 +66,7 @@ layout = dbc.Container(
                 ),
                 dbc.Col(
                     [
-                        html.H2(["String Length Calculator ", dbc.Badge("New!", color="success")]),
+                        html.H2(["String Length Calculator "]),
                         html.P(
                             """The string length calculator is an industry 
                             standard tool for calculating the maximum string 
@@ -80,19 +80,26 @@ layout = dbc.Container(
                             src=app.get_asset_url(
                                 'string_length_screenshot.png'),
                             style={'width': '100%'}),
-                        # html.H2("Photovoltaic Climate Zones"),
-                        # html.P(
-                        #     """Photovoltaic climate zones provides climate
-                        #     zones using climate-related stressors specific to
-                        #     photovoltaic degradation.
-                        #
-                        #     """
-                        # ),
+                        html.H2([
+                            "Photovoltaic Climate Zones ",
+                            dbc.Badge("New!", color="success")]
+                        ),
+                        html.P(
+                            """Explore the geographic distribution of 
+                            environmental stress on solar photovoltaics. 
+
+                            """
+                        ),
                         # html.A( dbc.Button("Launch Tool", color="secondary"),
-                        #         href='pvcz'),
-                        # dcc.Graph(
-                        #     figure={"data": [{"x": [1, 2, 3], "y": [1, 4, 9]}]}
-                        # ),
+                        #         href='pv-climate-stressors'),
+                        html.P(''),
+                        html.A(
+                            html.Img(
+                                src=app.get_asset_url(
+                                    'pvcz_screenshow2.jpg'),
+                                style={'width': '100%'}),
+                            href='pv-climate-stressors'
+                        ),
                     ]
                 ),
             ]

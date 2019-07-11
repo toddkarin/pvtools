@@ -18,6 +18,7 @@ import io
 import pandas as pd
 import pytz
 import glob
+import pvcz
 
 # try:
 #     import cPickle as pickle
@@ -40,6 +41,36 @@ for m in list(cec_modules.keys()):
 
 # Bucket for storing s3
 bucket = 'pvtools-nsrdb-pickle'
+
+# Get pvcz data
+pvcz_df = pvcz.get_pvcz_data()
+pvcz_info = pvcz.get_pvcz_info()
+
+pvcz_legend_str = {
+    'lat': 'Latitude (degrees)',
+    'lon': 'Longitude (degrees)',
+    'T_equiv_rack': 'Equivalent Temperature, Rack Mount (C)',
+    'T_equiv_roof': 'Equivalent Temperature, Roof Mount (C)',
+    'specific_humidity_mean': 'Mean Specific Humidity (g/kg)',
+    'T_velocity': 'Mean Temperature Velocity, Rack Mount (C/hr)',
+    'GHI_mean' : 'GHI (kWh/m2/day)',
+    'wind_speed': '25-year Mean Recurrence Interval wind speed (m/s)',
+    'T_ambient_min': 'Min ambient temperature (C)',
+    'KG_zone': 'Koppen-Geiger Zone',
+    'T_equiv_rack_zone': 'Equivalent Temperature Zone, Rack',
+    'T_equiv_roof_zone': 'Equivalent Temperature Zone, Roof',
+    'specific_humidity_mean_zone': 'Mean Specific Humidity Zone',
+    'wind_speed_zone': 'Wind Speed Zone',
+    'pvcz': 'Photovoltaic Climate Zone',
+    'pvcz_labeled': 'Photovoltaic Climate Zone (text)',
+}
+# Make list of options
+pvcz_stressor_dropdown_list = []
+for p in ['T_equiv_rack', 'T_equiv_roof', 'specific_humidity_mean',
+                    'T_velocity', 'GHI_mean', 'wind_speed', 'T_ambient_min',
+                    'T_equiv_rack_zone', 'T_equiv_roof_zone', 'specific_humidity_mean_zone',
+                    'wind_speed_zone', 'pvcz']:
+    pvcz_stressor_dropdown_list.append({'label': pvcz_legend_str[p], 'value': p})
 
 
 def get_s3_files():
