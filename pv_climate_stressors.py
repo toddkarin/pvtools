@@ -156,7 +156,9 @@ layout = dbc.Container([
             # dcc.Graph(id='pvcz-map')
 
             ])
-        ])
+        ]),
+    html.Div('',style={'min-height': 200}),
+
     ])
 
 # app.layout = layout
