@@ -108,10 +108,34 @@ layout = dbc.Container([
             )
         ])), id="pvcz-details-collapse"
     ),
+    dbc.Card([
+            dbc.CardHeader('Choose Location to lookup stressors'),
+            dbc.CardBody([
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Label('Latitude'),
+                        dbc.Input(id='pvcz-lat', value='37.88', type='text'),
+                        dbc.Label('Longitude'),
+                        dbc.Input(id='pvcz-lon', value='-122.25', type='text'),
+                        dbc.FormText(id='closest-message',
+                                 children='Closest point shown on map'),
+                        # html.P(''),
+                        # html.Div([
+                        # dbc.Button(id='get-weather', n_clicks=0,
+                        #                        children='Show nearest location on map'),
+                        #     ]),
+                        # html.Div(id='weather_data_download'),
 
+                    ],md=4),
+                    dbc.Col([
+                        html.Div(id='pvcz-stressors'),
+                    ],md=8)
+                ]),
+            ]),
+        ]),
     # html.H2('Simulation Input'),
     html.P(''),
-    html.H2('Photovoltaic climate data points'),
+    html.H2('Photovoltaic Equivalent Temperature'),
     dcc.Graph(id='pvcz-map',
               figure={
                   'data': [
@@ -120,7 +144,7 @@ layout = dbc.Container([
                           lon=pvcz.get_pvcz_data()['lon'],
                           mode='markers',
                           marker=dict(
-                              color=pvcz.get_pvcz_data()['T_equiv_rack'],
+                              color = pvcz.get_pvcz_data()['T_equiv_rack'],
                               colorscale=[
                                   [0, "rgb(150,0,90)"],
                                   [0.125, "rgb(0, 0, 200)"],
@@ -134,8 +158,7 @@ layout = dbc.Container([
                               ],
                               size=6
                           ),
-                          text='T_equiv_rack: ' + pvcz.get_pvcz_data()[
-                              'T_equiv_rack'].astype(str) + ' C',
+                          text='T_equiv_rack: ' + np.round(pvcz.get_pvcz_data()['T_equiv_rack'],2).astype(str) + ' C',
                           name='Database location'
                       ),
                   ],
@@ -187,6 +210,45 @@ def toggle_collapse(n, is_open):
     if n:
         return not is_open
     return is_open
+
+
+@app.callback(
+    Output("pvcz-stressors", "children"),
+    [Input("pvcz-lat", 'value'),
+     Input('pvcz-lon','value')],
+    [],
+)
+def get_stressors(lat,lon):
+    """
+    Example for looking up stressors at a particular location.
+
+    """
+
+    # Note df is a flattened list of lat/lon values that only includes those over land
+    df = pvcz.get_pvcz_data()
+
+    # Point of interest specified by lat/lon coordinates.
+    lat_poi = float(lat)
+    lon_poi = float(lon)
+
+    # Find the closest location on land to a point of interest
+    closest_index = pvcz.arg_closest_point(lat_poi, lon_poi, df['lat'],
+                                           df['lon'])
+
+    # Get the stressor data from this location
+    location_df = pd.DataFrame(data={'Parameter': df.keys(),
+                                     'Value': df.iloc[closest_index]})
+    for p in ['T_equiv_rack','T_equiv_roof','specific_humidity_mean','T_velocity','GHI_mean','wind_speed','T_ambient_min']:
+        location_df['Value'][p] = '{:.2f}'.format(location_df['Value'][p])
+    print(location_df)
+
+    return dbc.Table.from_dataframe(location_df,
+                                         striped=False,
+                                         bordered=True,
+                                         hover=True,
+                                         index=False,
+                                         size='sm',
+                                         style={'font-size':'0.8rem'})
 
 #
 # if __name__ == '__main__':
