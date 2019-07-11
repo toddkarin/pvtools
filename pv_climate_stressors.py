@@ -81,7 +81,9 @@ layout = dbc.Container([
 
             ### Summary
             The variable definitions and methods are described in 
-            a [conference manuscript](https://www.researchgate.net/publication/334401420_Photovoltaic_Degradation_Climate_Zones). 
+            a [conference manuscript](https://www.researchgate.net/publication/334401420_Photovoltaic_Degradation_Climate_Zones).
+            
+            This data is also available as an [open-source python library](https://github.com/toddkarin/pvcz).
 
             ### Who we are
 
