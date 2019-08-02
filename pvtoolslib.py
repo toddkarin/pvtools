@@ -19,6 +19,8 @@ import pandas as pd
 import pytz
 import glob
 import pvcz
+import os
+
 
 # try:
 #     import cPickle as pickle
@@ -95,6 +97,41 @@ def get_s3_files():
         files.append(item.key)
 
     return files
+
+def build_local_nsrdb_compressed_df():
+    full_path_list = glob.glob('/Users/toddkarin/Documents/NSRDB_compressed/*')
+
+    location_id = []
+    lat = []
+    lon = []
+    filename = []
+
+    # Extract location id, lat and lon.
+    for full_path in full_path_list:
+        path_parts = os.path.split(full_path)
+
+        filename.append(path_parts[1])
+
+        filename_parts = path_parts[1].split('_')
+
+        location_id.append(int(filename_parts[0]))
+        lat.append(float(filename_parts[1]))
+        lon.append(float(filename_parts[2][0:-4]))
+
+    # Create a DataFrame
+    filedata = pd.DataFrame.from_dict({
+        'location_id': location_id,
+        'lat': lat,
+        'lon': lon,
+        'filename': filename,
+        'full_path': full_path_list,
+    })
+
+    # Redefine the index.
+    filedata.index = range(filedata.__len__())
+
+
+    return filedata
 
 
 def build_s3_filename_list():

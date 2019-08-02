@@ -171,7 +171,9 @@ layout = dbc.Container([
 def update_pvcz_map(param):
     # return
 
-
+    #
+    # # Tickmode can be auto, linear or array
+    # tickmode =
 
     figure = {
         'data': [
@@ -194,12 +196,14 @@ def update_pvcz_map(param):
                     ],
                     size=6,
                     colorbar=dict(
+                        # dasf='asdf',
                         title=dict(
                             text=pvtoolslib.pvcz_legend_str[param],
-                            side='right'),
+                            side='right'
+                        ),
                     )
                 ),
-                text= param + ': ' + np.round(pvtoolslib.pvcz_df[param], 2).astype(str) + ' C',
+                text= param + ': ' + np.round(pvtoolslib.pvcz_df[param], 2).astype(str),
                 name='Database location'
             ),
         ],
@@ -234,7 +238,6 @@ def update_pvcz_map(param):
                 borderwidth=2
             )
         )}
-
     return dcc.Graph(id='pvcz-map',figure=figure,config=dict(scrollZoom=True))
 
 @app.callback(

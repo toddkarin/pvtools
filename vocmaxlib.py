@@ -22,7 +22,7 @@ import datetime
 
 cec_modules = pvlib.pvsystem.retrieve_sam('CeCMod')
 
-vocmaxlib_version = '0.1.2'
+vocmaxlib_version = '0.1.1'
 
 # Descriptions of hte various parameters used in the calculation.
 explain = {
@@ -394,7 +394,9 @@ def add_default_module_params(module_parameters):
     return module_parameters
 
 
-def make_voc_summary(df,module_parameters,max_string_voltage=1500):
+def make_voc_summary(df,module_parameters,
+                     max_string_voltage=1500,
+                     safety_factor=0.023):
     """
 
     Parameters
@@ -403,6 +405,10 @@ def make_voc_summary(df,module_parameters,max_string_voltage=1500):
     module_parameters
     max_string_voltage
 
+    safety_factor : float
+        safety factor for calculating string length as a fraction
+        of max Voc. Standard values are 0.023
+
     Returns
     -------
 
@@ -410,7 +416,7 @@ def make_voc_summary(df,module_parameters,max_string_voltage=1500):
 
 
     voc_summary = pd.DataFrame(
-        columns=['Conditions', 'v_oc', 'max_string_voltage', 'string_length',
+        columns=['Conditions', 'v_oc', 'max_string_voltage', 'safety_factor', 'string_length',
                  'Cell Temperature','POA Irradiance','long_note'],
         index=['P99.5', 'Hist', 'Trad','Day'])
 
@@ -418,6 +424,7 @@ def make_voc_summary(df,module_parameters,max_string_voltage=1500):
     mean_yearly_min_day_temp = calculate_mean_yearly_min_temp(df.index[df['ghi']>150],
                                               df['temp_air'][df['ghi']>150])
 
+    voc_summary['safety_factor'] = safety_factor
 
 
     # Calculate some standard voc values.
@@ -469,7 +476,7 @@ def make_voc_summary(df,module_parameters,max_string_voltage=1500):
     voc_summary['Cell Temperature'] = voc_summary.index.map(cell_temp)
 
     voc_summary['string_length'] = voc_summary['v_oc'].map(
-        lambda x: voc_to_string_length(x, max_string_voltage))
+        lambda x: voc_to_string_length(x, max_string_voltage,safety_factor))
 
     mean_yearly_min_temp = calculate_mean_yearly_min_temp(df.index, df['temp_air'])
     long_note = {
@@ -536,7 +543,7 @@ def make_voc_histogram(df,info,number_bins=400):
 
 
 def make_simulation_summary(df, info,module_parameters,racking_parameters,
-                            thermal_model,max_string_voltage):
+                            thermal_model,max_string_voltage,safety_factor):
     """
 
     Makes a text summary of the simulation.
@@ -553,7 +560,9 @@ def make_simulation_summary(df, info,module_parameters,racking_parameters,
 
     """
 
-    voc_summary = make_voc_summary(df, module_parameters, max_string_voltage=max_string_voltage)
+    voc_summary = make_voc_summary(df, module_parameters,
+                                   max_string_voltage=max_string_voltage,
+                                   safety_factor=safety_factor)
 
     if type(thermal_model)==type(''):
         thermal_model = {'Model parameters': thermal_model}
@@ -1109,7 +1118,7 @@ def get_temp_irradiance_for_voc_percentile(df, percentile=99.5, cushion = 0.0025
     return df.iloc[df.index.get_loc(t99p5)]
 
 
-def voc_to_string_length(voc,max_string_voltage):
+def voc_to_string_length(voc,max_string_voltage, safety_factor):
     """
 
     Returns the maximum number N modules with open circuit voltage voc that
@@ -1122,13 +1131,16 @@ def voc_to_string_length(voc,max_string_voltage):
     max_string_voltage : float
         Maximum string voltage
 
+    safety_factor : float
+        safety factor for string length.
+
     Returns
     -------
     N : float
         Maximum string length
 
     """
-    return np.round(np.floor(max_string_voltage/voc))
+    return np.round(np.floor(max_string_voltage*(1-safety_factor)/voc))
 
 
 

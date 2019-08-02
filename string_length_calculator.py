@@ -563,15 +563,20 @@ layout = dbc.Container([
     dbc.Card([
         dbc.CardHeader(['String Voltage Limit']),
         dbc.CardBody([
-            dcc.Markdown("""Set the design max string voltage for the PV system. 
-            
-            """),
-            dcc.Markdown('Max string voltage (V)'),
+            dcc.Markdown('Max string voltage, design voltage of system (V)'),
             dbc.Input(id='max_string_voltage',
                       value='1500',
                       type='text',
                       style={'max-width': 200}),
-            dbc.FormText('Maximum string voltage for calculating string length'),
+            dbc.FormText('Maximum string voltage for calculating string length, Vdesign'),
+            html.P(''),
+            dcc.Markdown('Safety factor for string length'),
+            dbc.Input(id='safety_factor',
+                      value='0.023',
+                      type='text',
+                      style={'max-width': 200}),
+            dbc.FormText(
+                'Safety factor as a fraction of system Voc. Number of modules in string is chosen to satisfy Nstring*Vmax<(1-safety_factor)*Vdesign'),
             ])
         ]),
     html.P(''),
@@ -1217,6 +1222,7 @@ def get_weather_data(lat,lon):
                 State('backtrack', 'value'),
                 State('ground_coverage_ratio', 'value'),
                 State('max_string_voltage', 'value'),
+                State('safety_factor', 'value'),
                ]
               )
 def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name, module_name_manual,
@@ -1224,7 +1230,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                  thermal_model_input_type, racking_model, a, b, DT,
                  mount_type, surface_tilt, surface_azimuth,
                  axis_tilt, axis_azimuth, max_angle, backtrack, ground_coverate_ratio,
-                 max_string_voltage):
+                 max_string_voltage,safety_factor):
 
     """
 
@@ -1262,6 +1268,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     backtrack
     ground_coverate_ratio
     max_string_voltage
+    safety_factor
 
     Returns
     -------
@@ -1303,7 +1310,8 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         'backtrack': str(backtrack),
         'ground_coverage_ratio': ground_coverate_ratio,
         'max_string_voltage': max_string_voltage,
-        'iv_model': 'desoto'
+        'iv_model': 'desoto',
+        'safety_factor': safety_factor
     }
 
 
@@ -1378,7 +1386,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         print('error getting racking type')
 
     max_string_voltage = float(max_string_voltage)
-
+    safety_factor = float(safety_factor)
 
     # print('Getting weather data...')
     weather, info = get_weather_data(lat,lon)
@@ -1387,7 +1395,8 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                                    racking_parameters, thermal_model)
 
     voc_summary = vocmaxlib.make_voc_summary(df, module,
-                                   max_string_voltage=max_string_voltage)
+                                   max_string_voltage=max_string_voltage,
+                                             safety_factor=safety_factor)
 
 
     voc_summary_table = voc_summary.rename(index=str,columns={'v_oc':'Voc',
@@ -1411,7 +1420,8 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                                                  module,
                                                  racking_parameters,
                                                  thermal_model,
-                                                 max_string_voltage)
+                                                 max_string_voltage,
+                                                 safety_factor)
 
     summary_text_for_download = "data:text/csv;charset=utf-8," + summary_text
 

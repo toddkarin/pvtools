@@ -76,10 +76,13 @@ layout = dbc.Container(
                         ),
                         html.A( dbc.Button("Launch Tool", color="secondary"),
                                 href='string-length-calculator'),
-                        html.Img(
-                            src=app.get_asset_url(
-                                'string_length_screenshot.png'),
-                            style={'width': '100%'}),
+                        html.A(
+                            html.Img(
+                                src=app.get_asset_url(
+                                    'string_length_screenshot.png'),
+                                style={'width': '100%'}),
+                            href='string-length-calculator'
+                        ),
                         html.H2([
                             "Photovoltaic Climate Zones ",
                             dbc.Badge("New!", color="success")]
