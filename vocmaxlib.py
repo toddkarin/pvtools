@@ -22,7 +22,7 @@ import datetime
 
 cec_modules = pvlib.pvsystem.retrieve_sam('CeCMod')
 
-vocmaxlib_version = '0.1.1'
+vocmaxlib_version = '0.1.5'
 
 # Descriptions of hte various parameters used in the calculation.
 explain = {
