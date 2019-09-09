@@ -51,27 +51,47 @@ pvcz_info = pvcz.get_pvcz_info()
 pvcz_legend_str = {
     'lat': 'Latitude (degrees)',
     'lon': 'Longitude (degrees)',
-    'T_equiv_rack': 'Equivalent Temperature, Rack Mount (C)',
-    'T_equiv_roof': 'Equivalent Temperature, Roof Mount (C)',
+    'T_equiv_rack_1p1eV': 'Equivalent Temperature, Rack Mount (C)',
+    'T_equiv_roof_1p1eV': 'Equivalent Temperature, Roof Mount (C)',
     'specific_humidity_mean': 'Mean Specific Humidity (g/kg)',
-    'T_velocity': 'Mean Temperature Velocity, Rack Mount (C/hr)',
+    'specific_humidity_rms': 'RMS Specific Humidity (g/kg)',
+    'T_velocity_rack': 'Mean Temperature Velocity, Rack Mount (C/hr)',
+    'T_velocity_roof': 'Mean Temperature Velocity, Roof Mount (C/hr)',
     'GHI_mean' : 'GHI (kWh/m2/day)',
     'wind_speed': '25-year Mean Recurrence Interval wind speed (m/s)',
     'T_ambient_min': 'Min ambient temperature (C)',
+    'T_ambient_mean': 'Mean ambient temperature (C)',
+    'T_ambient_max': 'Max ambient temperature (C)',
     'KG_zone': 'Koppen-Geiger Zone',
-    'T_equiv_rack_zone': 'Equivalent Temperature Zone, Rack',
-    'T_equiv_roof_zone': 'Equivalent Temperature Zone, Roof',
+    'KG_numeric_zone': 'Koppen-Geiger Zone',
+    'T_equiv_rack_1p1eV_zone': 'Equivalent Temperature Zone, Rack',
+    'T_equiv_roof_1p1eV_zone': 'Equivalent Temperature Zone, Roof',
     'specific_humidity_mean_zone': 'Mean Specific Humidity Zone',
     'wind_speed_zone': 'Wind Speed Zone',
     'pvcz': 'Photovoltaic Climate Zone',
     'pvcz_labeled': 'Photovoltaic Climate Zone (text)',
+    'ASCE 7-16 MRI 25-Year': 'ASCE 7-16 MRI 25-Year wind speed (m/s)',
+    'wind_speed_max': 'Max wind speed (m/s)',
+    'wind_speed_rms': 'RMS wind speed (m/s)',
 }
+
+# for s in ['0p1','0p3','0p5','0p7','0p9','1p1','1p3','1p5','1p7','1p9,'2p1]
+
+for s in np.arange(0.1,2.15,step=0.2):
+    # print('{:1.1f}'.format(s))
+    for t in ['rack','roof']:
+        pvcz_legend_str['T_equiv_' + t + '_{:1.1f}eV'.format(s).replace('.','p')] = 'Equivalent Temperature, ' + t + ', {:1.1f} eV'.format(s)
+
+
+
 # Make list of options
 pvcz_stressor_dropdown_list = []
-for p in ['T_equiv_rack', 'T_equiv_roof', 'specific_humidity_mean',
-                    'T_velocity', 'GHI_mean', 'wind_speed', 'T_ambient_min',
-                    'T_equiv_rack_zone', 'T_equiv_roof_zone', 'specific_humidity_mean_zone',
-                    'wind_speed_zone', 'pvcz']:
+for p in ['T_equiv_rack_1p1eV','T_equiv_roof_1p1eV','specific_humidity_mean',
+            'T_velocity_rack','T_velocity_roof','GHI_mean',
+            'T_ambient_min','KG_numeric_zone','pvcz','T_equiv_rack_1p1eV_zone',
+          'T_equiv_roof_1p1eV_zone','specific_humidity_mean_zone','ASCE 7-16 MRI 25-Year',
+            'wind_speed_max'
+          ]:
     pvcz_stressor_dropdown_list.append({'label': pvcz_legend_str[p], 'value': p})
 
 
