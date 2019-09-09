@@ -148,7 +148,7 @@ layout = dbc.Container([
             dcc.Dropdown(
                 id='pvcz-map-select',
                 options=pvtoolslib.pvcz_stressor_dropdown_list,
-                value='T_equiv_rack',
+                value='T_equiv_rack_1p1eV',
                 style={'max-width': 500}
             ),
             html.P(''),
@@ -175,6 +175,39 @@ def update_pvcz_map(param):
     # # Tickmode can be auto, linear or array
     # tickmode =
 
+
+    z = pvtoolslib.pvcz_df[param]
+
+    z = z.astype('float')
+    zones = pvcz.get_pvcz_zones()
+
+    print(param)
+
+
+    if param in ['pvcz','KG_numeric_zone']:
+        extra_text = []
+        print(zones['zone_spec'])
+        zone_spec_df = pd.DataFrame(data={
+            'Label': range(len(zones['zone_spec'][param])),
+            'Zone': zones['zone_spec'][param]
+        })
+
+        extra_text = dbc.Table.from_dataframe(zone_spec_df,
+                                 striped=False,
+                                 bordered=True,
+                                 hover=True,
+                                 index=False,
+                                 size='sm',
+                                 # style={'font-size':'0.8rem'}
+                                 ),
+
+        # for s in zones['zone_spec'][param]:
+        #     extra_text.append(html.P(s))
+        # print(zones['zone_spec']['pvcz'])
+
+    else:
+        extra_text = []
+
     figure = {
         'data': [
             go.Scattermapbox(
@@ -182,7 +215,7 @@ def update_pvcz_map(param):
                 lon=pvtoolslib.pvcz_df['lon'],
                 mode='markers',
                 marker=dict(
-                    color=pvtoolslib.pvcz_df[param],
+                    color=z,
                     colorscale=[
                         [0, "rgb(150,0,90)"],
                         [0.125, "rgb(0, 0, 200)"],
@@ -238,7 +271,11 @@ def update_pvcz_map(param):
                 borderwidth=2
             )
         )}
-    return dcc.Graph(id='pvcz-map',figure=figure,config=dict(scrollZoom=True))
+    return html.Div([
+        dcc.Graph(id='pvcz-map',figure=figure,config=dict(scrollZoom=True)),
+        html.P(''),
+        html.Div(extra_text)
+        ])
 
 @app.callback(
     Output("pvcz-details-collapse", "is_open"),
@@ -274,22 +311,78 @@ def get_stressors(lat,lon):
     closest_index = pvcz.arg_closest_point(lat_poi, lon_poi, df['lat'],
                                            df['lon'])
 
+
+    first_table_keys = ['lat', 'lon', 'T_equiv_rack_1p1eV','T_equiv_roof_1p1eV',
+                        'specific_humidity_mean',
+                        'T_velocity_rack',
+                        'GHI_mean',
+                        'T_ambient_min',
+                        'T_ambient_max','T_ambient_mean',
+                        'KG_zone',
+                        'T_equiv_rack_1p1eV_zone',
+                        'T_equiv_roof_1p1eV_zone',
+                        'specific_humidity_mean_zone',
+                        'pvcz',
+                        'pvcz_labeled',
+                        'ASCE 7-16 MRI 25-Year',
+                        'wind_speed_max']
+
+    detail_table_keys = ['T_equiv_rack_0p1eV', 'T_equiv_rack_0p3eV', 'T_equiv_rack_0p5eV',
+       'T_equiv_rack_0p7eV', 'T_equiv_rack_0p9eV', 'T_equiv_rack_1p1eV',
+       'T_equiv_rack_1p3eV', 'T_equiv_rack_1p5eV', 'T_equiv_rack_1p7eV',
+       'T_equiv_rack_1p9eV', 'T_equiv_rack_2p1eV', 'T_equiv_roof_0p1eV',
+       'T_equiv_roof_0p3eV', 'T_equiv_roof_0p5eV', 'T_equiv_roof_0p7eV',
+       'T_equiv_roof_0p9eV', 'T_equiv_roof_1p1eV', 'T_equiv_roof_1p3eV',
+       'T_equiv_roof_1p5eV', 'T_equiv_roof_1p7eV', 'T_equiv_roof_1p9eV',
+       'T_equiv_roof_2p1eV', 'T_velocity_rack', 'T_velocity_roof','wind_speed_rms',
+                         'specific_humidity_rms']
+
     # Get the stressor data from this location
-    location_df = pd.DataFrame(data={'Parameter': [pvtoolslib.pvcz_legend_str[p] for p in df.keys()],
-                                     'Value': df.iloc[closest_index]})
-    for p in ['T_equiv_rack','T_equiv_roof','specific_humidity_mean','T_velocity','GHI_mean','wind_speed','T_ambient_min']:
-        location_df['Value'][p] = '{:.2f}'.format(location_df['Value'][p])
+    # location_df = pd.DataFrame(data={'Parameter': [pvtoolslib.pvcz_legend_str[p] for p in df.keys()],
+    #                                  'Value': df.iloc[closest_index]})
+    location_df = pd.DataFrame(data={'Parameter': [pvtoolslib.pvcz_legend_str[p] for p in first_table_keys],
+                                     'Value': df[first_table_keys].iloc[closest_index]})
+    for p in ['T_equiv_rack_1p1eV','T_equiv_roof_1p1eV','specific_humidity_mean',
+              'T_velocity_rack','GHI_mean','T_ambient_min','T_ambient_max',
+              'T_ambient_mean','wind_speed_max','ASCE 7-16 MRI 25-Year']:
+        location_df.loc[p,'Value'] = '{:.2f}'.format(location_df['Value'][p])
 
 
-    return dbc.Table.from_dataframe(location_df,
+    detail_df = pd.DataFrame(data={
+        'Parameter': [pvtoolslib.pvcz_legend_str[p] for p in detail_table_keys],
+        'Value': df[detail_table_keys].iloc[closest_index]})
+
+
+    for p in detail_df.index:
+        detail_df.loc[p,'Value'] = '{:.2f}'.format(detail_df['Value'][p])
+
+
+    return html.Div([
+        dbc.Table.from_dataframe(location_df,
+                                 striped=False,
+                                 bordered=True,
+                                 hover=True,
+                                 index=False,
+                                 size='sm',
+                                 # style={'font-size':'0.8rem'}
+                                 ),
+        html.Details([
+            html.Summary(
+                "More stressors"),
+            html.Div([
+                dbc.Table.from_dataframe(detail_df,
                                          striped=False,
                                          bordered=True,
                                          hover=True,
                                          index=False,
                                          size='sm',
                                          # style={'font-size':'0.8rem'}
-                                    )
+                                         ),
+            ],style={'marginLeft': 50}
+            ),
 
+        ]),
+    ])
 #
 # if __name__ == '__main__':
 #     app.run_server(debug=True)
