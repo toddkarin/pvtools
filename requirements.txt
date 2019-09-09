@@ -11,3 +11,4 @@ pytz==2018.9
 scipy==1.2.1
 urllib3==1.24.1
 pvcz==0.2.0
+gunicorn=19.9.0
