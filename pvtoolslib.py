@@ -220,7 +220,15 @@ def get_s3_filename_df():
     -------
     filedata: dataframe
     """
-    return pd.read_pickle('s3_filedata.pkl')
+
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+
+    # Load temperature difference data.
+    df = pd.read_pickle(
+        os.path.join(dir_path, 's3_filedata.pkl')
+    )
+
+    return df
 
 
 def get_s3_npz(filename):
