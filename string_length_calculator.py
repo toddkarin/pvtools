@@ -20,7 +20,7 @@ import plotly.graph_objs as go
 # import plotly.plotly as py
 # from flask_caching import Cache
 from dash.dependencies import Input, Output, State
-import vocmaxlib
+import vocmax
 import numpy as np
 import pvlib
 import nsrdbtools
@@ -48,7 +48,7 @@ from app import app
 layout = dbc.Container([
     html.Hr(),
     html.Div([
-        html.H1("Photovoltaic String Length Calculator"),
+        html.H1("Solar Photovoltaic String Length Calculator"),
     ], style={
         # 'background-color': 'lightblue',
         'width': '100%',
@@ -59,10 +59,9 @@ layout = dbc.Container([
     # html.Div(str(uuid.uuid4()), id='session-id', style={'display': 'none'}),
     html.Div(id='click-data', style={'display': 'none'}),
     html.H2('Overview'),
-    dcc.Markdown("""This tool predicts the maximum open circuit voltage (Voc) 
-    expected to occur for modules in a solar installation at a particular 
-    location. One application of this tool is to determine optimal string 
-    sizes in accordance with National Electric Code (NEC) standards.
+    dcc.Markdown("""This tool determines the maximum string length for a 
+    solar PV installation in a particular location. The method is in 
+    accordance with National Electric Code (NEC) 690.7(A) standards. 
 
     **We would highly appreciate any feedback** (praise, bug reports, 
     suggestions, etc.). Please contact us at pvtools.lbl@gmail.com. 
@@ -329,33 +328,33 @@ layout = dbc.Container([
                                 dbc.Label("""Voco"""),
                                 dbc.Input(id='Voco', value='48.5', type='text',
                                           style={'max-width': 200}),
-                                dbc.FormText(vocmaxlib.explain['Voco']),
+                                dbc.FormText(vocmax.explain['Voco']),
                                 html.P(''),
                                 dbc.Label("""Bvoco"""),
                                 dbc.Input(id='Bvoco', value='-0.163', type='text',
                                           style={'max-width': 200}),
-                                dbc.FormText(vocmaxlib.explain['Bvoco']),
+                                dbc.FormText(vocmax.explain['Bvoco']),
                                 html.P(''),
                                 dbc.Label("""Mbvoc"""),
                                 dbc.Input(id='Mbvoc', value='0', type='text',
                                           style={'max-width': 200}),
-                                dbc.FormText(vocmaxlib.explain['Mbvoc']),
+                                dbc.FormText(vocmax.explain['Mbvoc']),
                                 html.P(''),
                                 dbc.Label("""cells_in_series"""),
                                 dbc.Input(id='cells_in_series', value='72', type='text',
                                           style={'max-width': 200}),
-                                dbc.FormText(vocmaxlib.explain['cells_in_series']),
+                                dbc.FormText(vocmax.explain['cells_in_series']),
                                 html.P(''),
                                 dbc.Label("""n_diode"""),
                                 dbc.Input(id='n_diode', value='1.05', type='text',
                                           style={'max-width': 200}),
-                                dbc.FormText(vocmaxlib.explain['n_diode'] +
+                                dbc.FormText(vocmax.explain['n_diode'] +
                                              '. Suggested values are 1.1 for mono-c-Si, 1.2 for multi-c-Si, and 1.4 for CdTe.'),
                                 html.P(''),
                                 dbc.Label("""FD"""),
                                 dbc.Input(id='FD', value='1', type='text',
                                           style={'max-width': 200}),
-                                dbc.FormText(vocmaxlib.explain['FD']),
+                                dbc.FormText(vocmax.explain['FD']),
                                 html.P(''),
                                 # dbc.Button('Calculate module parameters',id='show_iv',n_clicks=0),
                                 html.Div(id='manual_iv')
@@ -570,13 +569,13 @@ layout = dbc.Container([
                       style={'max-width': 200}),
             dbc.FormText('Maximum string voltage for calculating string length, Vdesign'),
             html.P(''),
-            dcc.Markdown('Safety factor for string length'),
+            dcc.Markdown('Safety factor for string length, in percent of design Voc'),
             dbc.Input(id='safety_factor',
-                      value='0.023',
+                      value='3.3',
                       type='text',
                       style={'max-width': 200}),
-            dbc.FormText(
-                'Safety factor as a fraction of system Voc. Number of modules in string is chosen to satisfy Nstring*Vmax<(1-safety_factor)*Vdesign'),
+            dbc.FormText(id='safety_factor_inform',
+                children='Safety factor as a fraction of system Voc. Number of modules in string is chosen to satisfy Nstring*Vmax<(1-safety_factor)*Vdesign'),
             ])
         ]),
     html.P(''),
@@ -648,7 +647,7 @@ layout = dbc.Container([
             "Where can I find an index of parameters?"),
         html.Div([
             # dcc.Markdown("""Right here!"""),
-                dcc.Markdown('**' + p + '**: ' + vocmaxlib.explain[p] ) for p in vocmaxlib.explain
+                dcc.Markdown('**' + p + '**: ' + vocmax.explain[p] ) for p in vocmax.explain
 
 
         ],style={'marginLeft': 50}
@@ -749,6 +748,68 @@ def toggle_collapse(n, is_open):
         return not is_open
     return is_open
 
+
+
+@app.callback(
+    Output('safety_factor_inform', 'children'),
+    [Input('lat', 'value'),
+     Input('lon', 'value'),
+     Input('module_parameter_input_type','active_tab'),
+     Input('module_name','value'),
+     Input('Bvoco','value'),
+     Input('Voco','value'),
+
+     ]
+)
+def update_output_div(lat, lon, module_parameter_input_type, module_name, Bvoco_manual,Voco_manual):
+    """
+    Callback for updating safety factor
+
+    Parameters
+    ----------
+    lat
+    lon
+
+    Returns
+    -------
+
+    """
+    lat = float(lat)
+    lon = float(lon)
+    temperature_error = vocmax.get_nsrdb_temperature_error(lat,lon)
+    print(module_parameter_input_type)
+    if module_parameter_input_type=='lookup':
+        print(module_name)
+        module_parameters = pvtoolslib.cec_modules[module_name].to_dict()
+        print(module_parameters)
+        Bvoco = module_parameters['beta_oc']
+        Voco = module_parameters['V_oc_ref']
+
+    elif module_parameter_input_type=='manual':
+        Bvoco = float(Bvoco_manual)
+        Voco = float(Voco_manual)
+    else:
+        raise Exception('module parameter lookup type not understood')
+
+    print(module_parameter_input_type)
+    print(module_name)
+    print(temperature_error)
+    print(Bvoco)
+    return """Safety factor as a fraction of system Voc. Number of modules in 
+    string is chosen to satisfy Nstring*Vmax<(1-safety_factor)*Vdesign. For 
+    the location of interest, the NSRDB temperature error of {:2.1f}C 
+    combined with Voc temperature coefficient of {:1.2f}%/C leads to NSRDB 
+    data uncertainty of {:2.1%} (lat/lon location {:3.2f},{:3.2f}). Add 
+    in Voc manufacturing uncertainty of 1% to get suggested safety factor of 
+    {:1.2%}. 
+    
+    """.format(temperature_error,
+               Bvoco/Voco*100,
+               temperature_error*np.abs(Bvoco/Voco),
+               lat,
+               lon,
+               temperature_error * np.abs(Bvoco / Voco) + 0.01
+               )
 
 
 # Callback for finding closest lat/lon in database.
@@ -976,7 +1037,7 @@ def update_Voco(racking_model):
 
 def make_iv_summary_layout(module_parameters):
     #
-    extra_parameters_dict = vocmaxlib.calculate_sapm_module_parameters(
+    extra_parameters_dict = vocmax.calculate_sapm_module_parameters(
         module_parameters)
 
 
@@ -984,10 +1045,9 @@ def make_iv_summary_layout(module_parameters):
     extra_parameters['Parameter'] = extra_parameters.index
     extra_parameters = extra_parameters[['Parameter','Value']]
 
-    # extra_parameters = vocmaxlib.calculate_sapm_module_parameters_df(module_parameters)
+    # extra_parameters = vocmax.calculate_sapm_module_parameters_df(module_parameters)
 
     extra_parameters = extra_parameters.drop('iv_model')
-    print(extra_parameters)
 
     extra_parameters['Value'] = extra_parameters['Value'].map(
         lambda x: '%2.3g' % x)
@@ -996,7 +1056,7 @@ def make_iv_summary_layout(module_parameters):
     irradiance_list = [1000, 800, 600, 400, 200]
     iv_curve = []
     for e in irradiance_list:
-        ret = vocmaxlib.calculate_iv_curve(e, 25, module_parameters)
+        ret = vocmax.calculate_iv_curve(e, 25, module_parameters)
         ret['effective_irradiance'] = e
         ret['legend'] = str(e) + ' W/m^2'
         iv_curve.append(ret)
@@ -1336,7 +1396,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         cec_parameters['name'] = module_name
         cec_parameters['aoi_model'] = 'no_loss'
 
-        sapm_parameters = vocmaxlib.calculate_sapm_module_parameters(
+        sapm_parameters = vocmax.calculate_sapm_module_parameters(
             cec_parameters)
 
         module = {**sapm_parameters, **cec_parameters}
@@ -1386,15 +1446,15 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         print('error getting racking type')
 
     max_string_voltage = float(max_string_voltage)
-    safety_factor = float(safety_factor)
+    safety_factor = float(safety_factor)/100
 
     # print('Getting weather data...')
     weather, info = get_weather_data(lat,lon)
 
-    df = vocmaxlib.simulate_system(weather, info,module,
+    df = vocmax.simulate_system(weather, info,module,
                                    racking_parameters, thermal_model)
 
-    voc_summary = vocmaxlib.make_voc_summary(df, module,
+    voc_summary = vocmax.make_voc_summary(df, module,
                                    max_string_voltage=max_string_voltage,
                                              safety_factor=safety_factor)
 
@@ -1416,7 +1476,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     voc_summary_table = voc_summary_table[['Voc','Max String Voltage',
                                            'String Length','Cell Temperature','POA Irradiance','Note']]
 
-    summary_text = vocmaxlib.make_simulation_summary(df, info,
+    summary_text = vocmax.make_simulation_summary(df, info,
                                                  module,
                                                  racking_parameters,
                                                  thermal_model,
@@ -1774,7 +1834,7 @@ def download_simulation_data():
         cec_parameters['FD'] = 1
         cec_parameters['name'] = p['module_name']
         cec_parameters['aoi_model'] = 'no_loss'
-        sapm_parameters = vocmaxlib.calculate_sapm_module_parameters(
+        sapm_parameters = vocmax.calculate_sapm_module_parameters(
             cec_parameters)
         sapm_parameters['iv_model'] = 'sapm'
         module = {**sapm_parameters, **cec_parameters}
@@ -1836,7 +1896,7 @@ def download_simulation_data():
         filedata_closest['filename'].iloc[0])
 
 
-    df = vocmaxlib.simulate_system(weather, info,module,
+    df = vocmax.simulate_system(weather, info,module,
                                    racking_parameters, thermal_model)
 
     # print('String Voltage Calculator:Simulation complete:')
