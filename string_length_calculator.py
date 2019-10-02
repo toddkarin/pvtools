@@ -777,11 +777,11 @@ def update_output_div(lat, lon, module_parameter_input_type, module_name, Bvoco_
     lat = float(lat)
     lon = float(lon)
     temperature_error = vocmax.get_nsrdb_temperature_error(lat,lon)
-    print(module_parameter_input_type)
+
     if module_parameter_input_type=='lookup':
-        print(module_name)
+
         module_parameters = pvtoolslib.cec_modules[module_name].to_dict()
-        print(module_parameters)
+
         Bvoco = module_parameters['beta_oc']
         Voco = module_parameters['V_oc_ref']
 
@@ -791,10 +791,6 @@ def update_output_div(lat, lon, module_parameter_input_type, module_name, Bvoco_
     else:
         raise Exception('module parameter lookup type not understood')
 
-    print(module_parameter_input_type)
-    print(module_name)
-    print(temperature_error)
-    print(Bvoco)
     return """Safety factor as a fraction of system Voc. Number of modules in 
     string is chosen to satisfy Nstring*Vmax<(1-safety_factor)*Vdesign. For 
     the location of interest, the NSRDB temperature error of {:2.1f}C 
