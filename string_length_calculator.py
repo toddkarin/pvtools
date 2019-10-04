@@ -944,19 +944,18 @@ def update_output_div(lat, lon, module_parameter_input_type, module_name, Bvoco_
     else:
         raise Exception('module parameter lookup type not understood')
 
-    return """Safety factor as a fraction of system Voc. Number of modules in 
+    return """Safety factor in percent of system Voc. Number of modules in 
     string is chosen to satisfy Nstring*Vmax<(1-safety_factor)*Vdesign. For 
-    the location of interest, the NSRDB temperature error of {:2.1f}C 
-    combined with Voc temperature coefficient of {:1.2f}%/C leads to NSRDB 
-    data uncertainty of {:2.1%} (lat/lon location {:3.2f},{:3.2f}). Add 
-    in Voc manufacturing uncertainty of 1% to get suggested safety factor of 
-    {:1.2%}. 
+    the chosen location (lat {:3.2f}, lon {:3.2f}), the NSRDB temperature 
+    error of {:2.1f}C combined with Voc temperature coefficient of {:1.2f}%/C 
+    leads to NSRDB data uncertainty of {:2.1%}. Add in Voc manufacturing 
+    uncertainty of 1% to get suggested safety factor of {:1.2%}. 
     
-    """.format(temperature_error,
+    """.format(lat,
+               lon,
+                temperature_error,
                Bvoco/Voco*100,
                temperature_error*np.abs(Bvoco/Voco),
-               lat,
-               lon,
                temperature_error * np.abs(Bvoco / Voco) + 0.01
                )
 
