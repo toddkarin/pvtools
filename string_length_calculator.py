@@ -306,6 +306,35 @@ layout = dbc.Container([
                                     style={'max-width': 500}
                                 ),
                                 html.P(''),
+                                dcc.Markdown("""Bifaciality
+
+                                """),
+                                dcc.Dropdown(
+                                    id='lookup_is_bifacial',
+                                    options=[
+                                        {'label': 'Monofacial Module',
+                                         'value': False},
+                                        {'label': 'Bifacial Module',
+                                         'value': True},
+                                    ],
+                                    value=False,
+                                    style={'max-width': 500}
+                                ),
+                                dbc.FormText("""Select 'bifacial' if the 
+                                module is bifacial and is mounted so that the 
+                                backside receives irradiance.
+                                
+                                """),
+                                html.P(''),
+                                html.Div([
+                                    dbc.Label("""Module bifaciality coefficient"""),
+                                    dbc.Input(id='lookup_bifaciality',
+                                              value='0.7',
+                                              type='text',
+                                              style={'max-width': 200}),
+                                    dbc.FormText("""Efficiency of the backside of the module relative to the frontside."""),
+                                    html.P(''),
+                                    ],id='lookup_bifaciality_div'),
                                 html.Div(id='module_name_iv')
                              ],
                         )
@@ -323,7 +352,7 @@ layout = dbc.Container([
                                           value='Custom Module',
                                           type='text',
                                           style={'max-width': 200}),
-                                dbc.FormText("""Module name for records"""),
+                                dbc.FormText("""Module name for outfile"""),
                                 html.P(''),
                                 dbc.Label("""Voco"""),
                                 dbc.Input(id='Voco', value='48.5', type='text',
@@ -356,6 +385,36 @@ layout = dbc.Container([
                                           style={'max-width': 200}),
                                 dbc.FormText(vocmax.explain['FD']),
                                 html.P(''),
+                                dcc.Markdown("""Bifaciality
+
+                                """),
+                                dcc.Dropdown(
+                                    id='manual_is_bifacial',
+                                    options=[
+                                        {'label': 'Monofacial Module',
+                                         'value': False},
+                                        {'label': 'Bifacial Module',
+                                         'value': True},
+                                    ],
+                                    value=False,
+                                    style={'max-width': 500}
+                                ),
+                                dbc.FormText("""Select 'bifacial' if the 
+                                module is bifacial and is mounted so that the 
+                                backside receives irradiance. 
+                                    
+                                """),
+                                html.P(''),
+                                html.Div([
+                                    dbc.Label("""Module bifaciality coefficient"""),
+                                    dbc.Input(id='manual_bifaciality',
+                                              value='0.7',
+                                              type='text',
+                                              style={'max-width': 200}),
+                                    dbc.FormText(
+                                    """Efficiency of the backside of the module relative to the frontside."""),
+                                    html.P(''),
+                                    ],id='manual_bifaciality_div'),
                                 # dbc.Button('Calculate module parameters',id='show_iv',n_clicks=0),
                                 html.Div(id='manual_iv')
                                 # dbc.Label("""AOI model. Loss model for
@@ -491,7 +550,28 @@ layout = dbc.Container([
                                        style={'max-width': 200}),
                              dbc.FormText("""For module face oriented due South use 180. 
                              For module face oreinted due East use 90"""),
+                             dbc.Label("""Ground albedo"""),
+                             dbc.Input(id='fixed_tilt_albedo',
+                                          value='0.25',
+                                          type='text',
+                                          style={'max-width': 200}),
+                             dbc.FormText("""Ground albedo is used to 
+                             calculate light reflected from the ground onto 
+                             front or backside of module. 
 
+                             """),
+                             html.Div([
+                                 dbc.Label("""Backside irradiance fraction"""),
+                                 dbc.Input(id='fixed_tilt_backside_irradiance_fraction',
+                                           value='0.2',
+                                           type='text',
+                                           style={'max-width': 200}),
+                                 dbc.FormText("""Fraction of light falling on 
+                                 back of a bifacial module relative to the front. 
+                                 Unused if module is not bifacial. 
+                                 
+                                 """),
+                                 ],id='fixed_tilt_backside_irradiance_fraction_div'),
                              ],
 
                         )
@@ -550,6 +630,29 @@ layout = dbc.Container([
                              between the tracking axes has a gcr of 
                              2/6=0.333. If gcr is not provided, a gcr of 2/7 
                              is default. gcr must be <=1"""),
+                             dbc.Label("""Ground albedo"""),
+                             dbc.Input(id='single_axis_albedo',
+                                       value='0.25',
+                                       type='text',
+                                       style={'max-width': 200}),
+                             dbc.FormText("""Ground albedo is used to 
+                             calculate light reflected from the ground onto 
+                             front or backside of module. 
+                             
+                             """),
+                             html.Div([
+                                 dbc.Label("""Backside irradiance fraction"""),
+                                 dbc.Input(
+                                     id='single_axis_backside_irradiance_fraction',
+                                     value='0.2',
+                                     type='text',
+                                     style={'max-width': 200}),
+                                 dbc.FormText("""Fraction of light falling on 
+                                 back of a bifacial module relative to the front. 
+                                 Unused if module is not bifacial. 
+                                        
+                                    """),
+                                ],'single_axis_backside_irradiance_fraction_div')
                              ]
                         )
                     )
@@ -738,6 +841,7 @@ layout = dbc.Container([
 #     return is_open
 
 
+
 @app.callback(
     Output("details-collapse", "is_open"),
     [Input("details-button", "n_clicks")],
@@ -747,6 +851,55 @@ def toggle_collapse(n, is_open):
     if n:
         return not is_open
     return is_open
+
+
+# Functions for hiding input when bifacial is not selected
+@app.callback(
+    Output("lookup_bifaciality_div", "style"),
+    [Input("lookup_is_bifacial", "value")],
+)
+def hide_lookup_bifaciality_input(is_bifacial):
+    if is_bifacial:
+        style = {}
+    else:
+        style = {'display':'none'}
+    return style
+
+@app.callback(
+    Output("manual_bifaciality_div", "style"),
+    [Input("manual_is_bifacial", "value")],
+)
+def hide_manual_bifaciality_input(is_bifacial):
+    if is_bifacial:
+        style = {}
+    else:
+        style = {'display':'none'}
+
+    return style
+
+@app.callback(
+    [Output("single_axis_backside_irradiance_fraction_div", "style"),
+    Output("fixed_tilt_backside_irradiance_fraction_div", "style"),
+     ],
+    [Input("lookup_is_bifacial", "value"),
+    Input("manual_is_bifacial", "value"),
+     ],
+    [State('module_parameter_input_type','active_tab'),
+     ]
+)
+def hide_backside_irradiance_fraction_input(lookup_is_bifacial, manual_is_bifacial, module_parameter_input_type):
+
+    if module_parameter_input_type=='lookup':
+        is_bifacial = lookup_is_bifacial
+    elif module_parameter_input_type=='manual':
+        is_bifacial = manual_is_bifacial
+
+    if is_bifacial:
+        style = {}
+    else:
+        style = {'display':'none'}
+
+    return [style, style]
 
 
 
@@ -1104,7 +1257,7 @@ def make_iv_summary_layout(module_parameters):
 @app.callback(Output('module_name_iv', 'children'),
               [Input('module_name', 'value')
                ])
-def prepare_data(module_name):
+def plot_lookup_IV(module_name):
     """
     Callback for IV curve plotting in setting module parameters.
 
@@ -1183,7 +1336,7 @@ def prepare_data(module_name):
                   Input('FD', 'value'),
                ]
               )
-def prepare_data(module_name_manual,
+def plot_manual_IV(module_name_manual,
                  Voco, Bvoco, Mbvoc, n_diode, cells_in_series, FD):
     try:
         module_parameters = {
@@ -1208,7 +1361,7 @@ def prepare_data(module_name_manual,
 @app.callback(Output('load', 'children'),
               [Input('submit-button', 'n_clicks')
                ])
-def prepare_data(categ):
+def make_calculating_screen(categ):
     if categ:
         return html.Div([
             dbc.Alert("Calculating...",
@@ -1279,6 +1432,14 @@ def get_weather_data(lat,lon):
                 State('ground_coverage_ratio', 'value'),
                 State('max_string_voltage', 'value'),
                 State('safety_factor', 'value'),
+                State('lookup_is_bifacial', 'value'),
+                State('manual_is_bifacial', 'value'),
+                State('lookup_bifaciality', 'value'),
+                State('manual_bifaciality', 'value'),
+                State('fixed_tilt_albedo', 'value'),
+                State('single_axis_albedo', 'value'),
+                State('fixed_tilt_backside_irradiance_fraction', 'value'),
+                State('single_axis_backside_irradiance_fraction', 'value'),
                ]
               )
 def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name, module_name_manual,
@@ -1286,7 +1447,11 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                  thermal_model_input_type, racking_model, a, b, DT,
                  mount_type, surface_tilt, surface_azimuth,
                  axis_tilt, axis_azimuth, max_angle, backtrack, ground_coverate_ratio,
-                 max_string_voltage,safety_factor):
+                 max_string_voltage,safety_factor,
+                 lookup_is_bifacial, manual_is_bifacial,
+                 lookup_bifaciality, manual_bifaciality,
+                 fixed_tilt_albedo, single_axis_albedo,
+                   fixed_tilt_backside_irradiance_fraction, single_axis_backside_irradiance_fraction):
 
     """
 
@@ -1367,9 +1532,16 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         'ground_coverage_ratio': ground_coverate_ratio,
         'max_string_voltage': max_string_voltage,
         'iv_model': 'desoto',
-        'safety_factor': safety_factor
+        'safety_factor': safety_factor,
+        'lookup_is_bifacial': lookup_is_bifacial,
+        'manual_is_bifacial': manual_is_bifacial,
+        'manual_bifaciality': manual_bifaciality,
+        'lookup_bifaciality': lookup_bifaciality,
+        'fixed_tilt_albedo': fixed_tilt_albedo,
+        'single_axis_albedo': single_axis_albedo,
+        'fixed_tilt_backside_irradiance_fraction': fixed_tilt_backside_irradiance_fraction,
+        'single_axis_backside_irradiance_fraction': single_axis_backside_irradiance_fraction,
     }
-
 
     request_str = '?'
     for p in all_params:
@@ -1397,6 +1569,9 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
 
         module = {**sapm_parameters, **cec_parameters}
 
+        module['is_bifacial'] = lookup_is_bifacial
+        module['bifaciality_factor'] = float(lookup_bifaciality)
+
     elif module_parameter_input_type=='manual':
         module = {
             'name': module_name_manual,
@@ -1407,7 +1582,9 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
             'cells_in_series': float(cells_in_series),
             'aoi_model': 'no_loss',
             'iv_model': 'sapm',
-            'FD': float(FD)
+            'FD': float(FD),
+            'is_bifacial': manual_is_bifacial,
+            'bifaciality_factor': float(manual_bifaciality)
         }
     else:
         print('input type not understood.')
@@ -1427,7 +1604,11 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         racking_parameters = {
             'racking_type': 'fixed_tilt',
             'surface_tilt': float(surface_tilt),
-            'surface_azimuth': float(surface_azimuth)
+            'surface_azimuth': float(surface_azimuth),
+            'albedo': float(fixed_tilt_albedo),
+            'backside_irradiance_fraction': float(fixed_tilt_backside_irradiance_fraction),
+            'bifacial_model': 'proportional',
+
         }
     elif mount_type=='single_axis_tracker':
         racking_parameters = {
@@ -1436,7 +1617,10 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
             'axis_azimuth': float(axis_azimuth),
             'max_angle': float(max_angle),
             'backtrack': backtrack,
-            'gcr': float(ground_coverate_ratio)
+            'gcr': float(ground_coverate_ratio),
+            'albedo': float(single_axis_albedo),
+            'backside_irradiance_fraction': float(single_axis_backside_irradiance_fraction),
+            'bifacial_model': 'proportional',
         }
     else:
         print('error getting racking type')
@@ -1452,7 +1636,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
 
     voc_summary = vocmax.make_voc_summary(df, module,
                                    max_string_voltage=max_string_voltage,
-                                             safety_factor=safety_factor)
+                                   safety_factor=safety_factor)
 
 
     voc_summary_table = voc_summary.rename(index=str,columns={'v_oc':'Voc',
@@ -1820,11 +2004,10 @@ def download_simulation_data():
                                                          float(p['lon']),
                                                          filedata)
 
-    # print('/'.join(all_params))
-
-
-
-
+    print('test stuff')
+    print(type(p['lookup_is_bifacial']))
+    print(p['lookup_is_bifacial']=='True')
+    print(p['lookup_bifaciality'])
     if p['module_parameter_input_type']=='lookup':
         cec_parameters = pvtoolslib.cec_modules[p['module_name']].to_dict()
         cec_parameters['FD'] = 1
@@ -1834,6 +2017,10 @@ def download_simulation_data():
             cec_parameters)
         sapm_parameters['iv_model'] = 'sapm'
         module = {**sapm_parameters, **cec_parameters}
+
+        module['is_bifacial'] = p['lookup_is_bifacial']=='True'
+        module['bifaciality_factor'] = float(p['lookup_bifaciality'])
+
 
 
     elif p['module_parameter_input_type']=='manual':
@@ -1846,8 +2033,11 @@ def download_simulation_data():
             'cells_in_series': float(p['cells_in_series']),
             'aoi_model': 'no_loss',
             'iv_model': 'sapm',
-            'FD': float(p['FD'])
+            'FD': float(p['FD']),
+            'is_bifacial': p['manual_is_bifacial']=='True',
+            'bifaciality_factor': float(p['manual_bifaciality']),
         }
+
 
     else:
         print('input type not understood.')
@@ -1869,7 +2059,10 @@ def download_simulation_data():
         racking_parameters = {
             'racking_type': 'fixed_tilt',
             'surface_tilt': float(p['surface_tilt']),
-            'surface_azimuth': float(p['surface_azimuth'])
+            'surface_azimuth': float(p['surface_azimuth']),
+            'albedo': float(p['fixed_tilt_albedo']),
+            'backside_irradiance_fraction': float(p['fixed_tilt_backside_irradiance_fraction']),
+            'bifacial_model': 'proportional',
         }
     elif p['mount_type']=='single_axis_tracker':
         racking_parameters = {
@@ -1878,7 +2071,10 @@ def download_simulation_data():
             'axis_azimuth': float(p['axis_azimuth']),
             'max_angle': float(p['max_angle']),
             'backtrack': p['backtrack'],
-            'gcr': float(p['ground_coverage_ratio'])
+            'gcr': float(p['ground_coverage_ratio']),
+            'albedo': float(p['single_axis_albedo']),
+            'backside_irradiance_fraction': float(p['single_axis_backside_irradiance_fraction']),
+            'bifacial_model': 'proportional',
         }
     else:
         print('error getting racking type')
@@ -1893,7 +2089,8 @@ def download_simulation_data():
 
 
     df = vocmax.simulate_system(weather, info,module,
-                                   racking_parameters, thermal_model)
+                                   racking_parameters,
+                                thermal_model)
 
     # print('String Voltage Calculator:Simulation complete:')
     # df_temp = pd.DataFrame(info,index=[0])
