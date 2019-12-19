@@ -4,12 +4,12 @@ botocore==1.12.128
 certifi==2019.3.9
 chardet==3.0.4
 Click==7.0
-dash==0.39.0
-dash-bootstrap-components==0.3.5
-dash-core-components==0.44.0
-dash-html-components==0.14.0
-dash-renderer==0.20.0
-dash-table==3.6.0
+dash==1.7.0
+dash-bootstrap-components==0.7.2
+dash-core-components==1.6.0
+dash-html-components==1.0.2
+dash-renderer==1.2.2
+dash-table==4.5.1
 decorator==4.4.0
 docutils==0.14
 enum34==1.1.6
@@ -41,4 +41,4 @@ traitlets==4.3.2
 urllib3==1.24.2
 Werkzeug==0.15.0
 pvcz==0.2.3
-vocmax==0.0.6
+vocmax==0.0.9
