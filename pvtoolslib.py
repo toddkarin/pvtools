@@ -28,7 +28,7 @@ import os
 #     import pickle
 #
 
-version = '0.0.2'
+version = '0.0.3'
 contact_email = 'pvtools.lbl@gmail.com'
 
 # sandia_modules = pvlib.pvsystem.retrieve_sam('SandiaMod')
@@ -43,6 +43,8 @@ for m in list(cec_modules.keys()):
 
 # Bucket for storing s3
 bucket = 'pvtools-nsrdb-pickle'
+
+
 
 # Get pvcz data
 pvcz_df = pvcz.get_pvcz_data()
@@ -117,6 +119,37 @@ def get_s3_files():
         files.append(item.key)
 
     return files
+
+
+
+
+def get_s3_csv(filename):
+    """
+
+
+    """
+
+    # filename = '2017DesignConditions_s.xlsx.csv'
+
+    bucket = 'pvtools-nsrdb-pickle'
+
+    # connect to AWS S3
+    s3 = boto3.resource('s3')
+
+    obj = s3.Object(bucket, filename)
+
+    df = pd.read_csv(obj.get()['Body'])
+
+    return df
+
+
+print('Getting ashrae data...')
+if os.path.exists('2017DesignConditions_s.xlsx.csv'):
+    ashrae = pd.read_csv('2017DesignConditions_s.xlsx.csv')
+else:
+    ashrae = get_s3_csv(filename='2017DesignConditions_s.xlsx.csv')
+print('Done.')
+
 
 def build_local_nsrdb_compressed_df():
     full_path_list = glob.glob('/Users/toddkarin/Documents/NSRDB_compressed/*')
