@@ -1844,7 +1844,8 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
 
     voc_summary = vocmax.make_voc_summary(df, info, module,
                                    string_design_voltage=string_design_voltage,
-                                   safety_factor=safety_factor)
+                                   safety_factor=safety_factor,
+                                    ashrae=pvtoolslib.ashrae)
 
 
 
@@ -1876,7 +1877,8 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                                                  racking_parameters,
                                                  thermal_model,
                                                  string_design_voltage,
-                                                 safety_factor)
+                                                 safety_factor,
+                                                 ashrae=pvtoolslib.ashrae)
 
     summary_text_for_download = "data:text/csv;charset=utf-8," + summary_text
 
