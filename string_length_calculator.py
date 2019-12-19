@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 
-This script builds a Dash web application for finding maximum module Voc.
-Specifically, it builds the layout that is called by index.py
+This script builds a Dash web application for calculating string length for a
+PV System. Specifically, it builds the layout that is called by index.py
 
 Todd Karin
 
@@ -17,6 +17,7 @@ import dash_bootstrap_components as dbc
 # import dash_table
 import plotly.colors
 import plotly.graph_objs as go
+import plotly.figure_factory as ff
 # import plotly.plotly as py
 # from flask_caching import Cache
 from dash.dependencies import Input, Output, State
@@ -79,55 +80,6 @@ layout = dbc.Container([
         ],width=3)
 
     ],justify='start'),
-
-    # dbc.Collapse(
-    #     dbc.Card(dbc.CardBody([
-    #
-    #         dcc.Markdown("""### National Electric Code Standards
-    #
-    #         The National Electric Code 2017 lists three different methods
-    #         for determining the maximum string length in Article 690.7:
-    #
-    #         """.replace('    ','')
-    #         ),
-    #         html.Ol([
-    #             html.Li("""690.7(A)(1) Instruction in listing or labeling of module:
-    #             The sum of the PV module-rated open-circuit voltage of the
-    #             series-connected modules corrected for the lowest expected ambient
-    #             temperature using the open-circuit voltage temperature coefficients
-    #             in accordance with the instructions included in the listing or
-    #             labeling of the module.
-    #
-    #             """),
-    #             html.Li("""690.7(A)(2) Crystalline and multicrystalline modules: For
-    #             crystalline and multicrystalline silicon modules, the sum of the PV
-    #             module-rated open-circuit voltage of the series-connected modules
-    #             corrected for the lowest expected ambient temperature using the
-    #             correction factor provided in Table 690.7(A).
-    #
-    #             """),
-    #             html.Li("""690.7(A)(3) PV systems of 100 kW or larger: For PV systems
-    #             with a generating capcity of 100 kW or greater, a documented and
-    #             stamped PV system design, using an industry standard method and
-    #             provided by a licensed professional electrical engineer, shall be
-    #             permitted.
-    #
-    #             """)
-    #
-    #         ], style={'marginLeft': 50}),
-    #         html.P("""This tool provides standard values for methods 690.7(A)(1)
-    #         and 690.7(A)(3). For method 690.7(A)(1), The lowest
-    #         expected ambient temperature is calculated by finding the minimum
-    #         temperature during daylight hours, defined as GHI>150 W/m^2. For
-    #         method 690.7(A)(3), the full PVLIB model is run using weather
-    #         data from the selected location and module parameters.
-    #
-    #         """),
-    #
-    #     ])),
-    #     id="nec-collapse",
-    # ),
-
     dbc.Collapse(
         dbc.Card(dbc.CardBody([
             dcc.Markdown("""
@@ -214,12 +166,10 @@ layout = dbc.Container([
             provided by a licensed professional electrical engineer, shall be 
             permitted. 
             
-            This tool provides standard values for methods 690.7(A)(1) 
-            and 690.7(A)(3). For method 690.7(A)(1), The lowest 
-            expected ambient temperature is calculated by finding the minimum 
-            temperature during daylight hours, defined as GHI>150 W/m^2. For 
-            method 690.7(A)(3), the full PVLIB model is run using weather 
-            data from the selected location and module parameters. 
+            This tool provides standard values for the trhee 690.7(A) 
+            methods. For method 690.7(A)(3), the system is modeled using 19 
+            years of NSRDB weather from the selected location and module 
+            parameters. 
                 
             ### Who we are
             
@@ -276,7 +226,7 @@ layout = dbc.Container([
                 ],md=4),
                 dbc.Col([
                     html.Div(id='location-map', children=[dcc.Graph(id='map')]),
-                    html.P('Find location on map, enter coordinates manually.')
+                    html.P('Either enter coordinates manually or click on point.')
                 ],md=8)
             ]),
         ]),
@@ -313,11 +263,11 @@ layout = dbc.Container([
                                     id='lookup_is_bifacial',
                                     options=[
                                         {'label': 'Monofacial Module',
-                                         'value': False},
+                                         'value': 0},
                                         {'label': 'Bifacial Module',
-                                         'value': True},
+                                         'value': 1},
                                     ],
-                                    value=False,
+                                    value=0,
                                     style={'max-width': 500}
                                 ),
                                 dbc.FormText("""Select 'bifacial' if the 
@@ -340,6 +290,7 @@ layout = dbc.Container([
                         )
                     )
                 ], tab_id='lookup', label='Library Lookup'),
+                # TODO: Add units to the lookup table.
                 dbc.Tab([
                     dbc.Card(
                         dbc.CardBody(
@@ -380,6 +331,11 @@ layout = dbc.Container([
                                 dbc.FormText(vocmax.explain['n_diode'] +
                                              '. Suggested values are 1.1 for mono-c-Si, 1.2 for multi-c-Si, and 1.4 for CdTe.'),
                                 html.P(''),
+                                dbc.Label("""efficiency"""),
+                                dbc.Input(id='efficiency', value='0.17', type='text',
+                                          style={'max-width': 200}),
+                                dbc.FormText('Module efficiency, unitless'),
+                                html.P(''),
                                 dbc.Label("""FD"""),
                                 dbc.Input(id='FD', value='1', type='text',
                                           style={'max-width': 200}),
@@ -392,11 +348,11 @@ layout = dbc.Container([
                                     id='manual_is_bifacial',
                                     options=[
                                         {'label': 'Monofacial Module',
-                                         'value': False},
+                                         'value': 0},
                                         {'label': 'Bifacial Module',
-                                         'value': True},
+                                         'value': 1},
                                     ],
-                                    value=False,
+                                    value=0,
                                     style={'max-width': 500}
                                 ),
                                 dbc.FormText("""Select 'bifacial' if the 
@@ -467,18 +423,16 @@ layout = dbc.Container([
                                 dcc.Dropdown(
                                  id='racking_model',
                                  options=[
-                                     {'label': 'open rack cell glassback',
+                                     {'label': 'open rack glass polymer',
+                                      'value': 'open_rack_cell_polymerback'},
+                                     {'label': 'open rack glass glass',
                                       'value': 'open_rack_cell_glassback'},
-                                     {'label': 'roof mount cell glassback',
+                                     {'label': 'close mount glass glass',
                                       'value': 'roof_mount_cell_glassback'},
-                                     {'label': 'insulated back polymerback',
+                                     {'label': 'insulated back glass polymer',
                                       'value': 'insulated_back_polymerback'},
-                                     {'label': 'open rack polymer thinfilm steel',
-                                      'value': 'open_rack_polymer_thinfilm_steel'},
-                                     {'label': '22x concentrator tracker',
-                                      'value': '22x_concentrator_tracker'}
                                  ],
-                                 value='open_rack_cell_glassback',
+                                 value='open_rack_cell_polymerback',
                                  style={'max-width': 500}
                                 ),
                                 dbc.FormText("""Standard coefficents for 
@@ -495,7 +449,13 @@ layout = dbc.Container([
                 dbc.Tab([
                     dbc.Card(
                         dbc.CardBody(
-                            [
+                            [   html.P(
+                                    ['Enter thermal model parameters from the ',
+                                    html.A('Sandia array performance model',
+                                           href='https://prod-ng.sandia.gov/techlib-noauth/access-control.cgi/2004/043535.pdf', target='_blank'),
+                                     '.'
+                                ]),
+
                                 dbc.Label("""a
                                 """),
                                 dbc.Input(id='a', value='-3.47', type='text',
@@ -528,7 +488,29 @@ layout = dbc.Container([
                     )
                 ], tab_id='manual', label='Manual Entry')
             ], id='thermal_model_input_type', active_tab='lookup'),
-        ])
+            html.P(''),
+            dcc.Markdown("""Open-Circuit Temperature Rise
+
+                                """),
+            dcc.Dropdown(
+                id='open_circuit_rise',
+                options=[
+                    {'label': 'Open-circuit temperature rise included',
+                     'value': 0},
+                    {'label': 'Open-circuit temperature rise excluded',
+                     'value': 1},
+                ],
+                value=0,
+                style={'max-width': 500}
+            ),
+            dbc.FormText("""Modules at open-circuit voltage are slightly 
+            warmer than those at max-power point because at open-circuit 
+            absorbed energy is not exported as electricity. However, for the 
+            first few minutes of a shutdown the modules have not had time to 
+            equilibrate to the higher temperature. 
+
+                                """),
+        ]),
     ]),
     html.P(''),
     dbc.Card([
@@ -661,24 +643,118 @@ layout = dbc.Container([
         ])
     ]),
     html.P(''),
-    html.H2('Step 3: Provide Desired Maximum String Voltage'),
+    html.H2('Step 3: Provide Design Maximum String Voltage and Safety Factor'),
     dbc.Card([
         dbc.CardHeader(['String Voltage Limit']),
         dbc.CardBody([
-            dcc.Markdown('Max string voltage, design voltage of system (V)'),
-            dbc.Input(id='max_string_voltage',
+            dcc.Markdown('String design voltage (V)'),
+            dbc.Input(id='string_design_voltage',
                       value='1500',
                       type='text',
                       style={'max-width': 200}),
-            dbc.FormText('Maximum string voltage for calculating string length, Vdesign'),
+            dbc.FormText('Maximum string design voltage (Vdesign) for calculating string length, in Volts'),
+            ])
+    ]),
+    html.P(''),
+    dbc.Card([
+        # XX
+        dbc.CardHeader(['Safety factor']),
+        dbc.CardBody([
+            dcc.Markdown('Safety factor due to NSRDB weather uncertainty (%).  Use look up button to get suggested value for current lat/lon.'),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Button(id='nsrdb_get_weather_data_uncertainty',
+                               n_clicks=0,
+                               children='Look up',
+                               color="secondary")
+                ],width='auto'),
+                dbc.Col([
+                        dbc.Input(id='nsrdb_weather_data_safety_factor',
+                          value='2.3',
+                          type='text',
+                          style={'max-width': 200}
+                              ),
+                ],width='auto'),
+            ],justify='start'),
+            dbc.FormText(id='nsrdb_safety_factor_inform',
+                children="""Safety factor due to NSRDB uncertainty is found 
+                by comparing NSRDB and ASHRAE extreme yearly minimum dry bulb 
+                temperatures for the location of interest. The temperature 
+                difference is multiplied by the absolute value of the 
+                temperature coefficient of open-circuit voltage in %/C 
+                Alternately, can use a standard NSRDB weather uncertainty of 
+                2.3 %. 
+                
+                """.replace('    ', '')),
             html.P(''),
-            dcc.Markdown('Safety factor for string length, in percent of design Voc'),
-            dbc.Input(id='safety_factor',
-                      value='3.3',
-                      type='text',
-                      style={'max-width': 200}),
-            dbc.FormText(id='safety_factor_inform',
-                children='Safety factor as a fraction of system Voc. Number of modules in string is chosen to satisfy Nstring*Vmax<(1-safety_factor)*Vdesign'),
+            dcc.Markdown('Optional safety factor due to extreme cold temperatures, only consider including if using 690.7(A)(3)-P100 standard.'),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Button(id='get_extreme_cold_uncertainty',
+                               n_clicks=0,
+                               children='Look up',
+                               color="secondary")
+                ],width='auto'),
+                dbc.Col([
+                    dbc.Input(id='extreme_cold_uncertainty',
+                          value='0.0',
+                          type='text',
+                          style={'max-width': 200}
+                              ),
+                ],width='auto'),
+                dbc.Col([
+                    dcc.Dropdown(
+                        id='extreme_cold_include',
+                        options=[
+                            {'label': 'Include',
+                             'value': 1},
+                            {'label': 'Exclude',
+                             'value': 0},
+                        ],
+                        value=0,
+                        style={'max-width': 1000}
+                    ),
+                ],width=2),
+                dbc.Col([
+                    dcc.Loading(html.Div(
+                        id='extreme_cold_safety_factor_loading_div'))
+                ], width=1),
+            ],justify='start'),
+            dbc.FormText(id='extreme_cold_safety_factor_inform'),
+            html.P(''),
+            dcc.Markdown(
+                'Additional additive safety factor.'),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Button(id='get_suggested_additional_safety_factor',
+                               n_clicks=0,
+                               children='Get Suggestion',
+                               color="secondary")
+                ], width='auto'),
+                dbc.Col([dbc.Input(id='additional_safety_factor',
+                              value='1.0',
+                              type='text',
+                              style={'max-width': 200}
+                              )
+                ], width='auto'),
+                dbc.Col([
+                    dcc.Loading(html.Div(
+                        id='additional_safety_factor_loading_div'))
+                ], width=1),
+            ], justify='start'),
+            dbc.FormText(id='additional_safety_factor_inform',
+                         children='Additional safety factor in percent of system Voc. Suggested value is 1.0% to account for Voc manufacturing uncertainty plus an additional 0.6% if the diode ideality factor is unknown.'),
+            html.P(''),
+            dcc.Markdown('Total safety factor, in percent.'),
+            dbc.Row([
+                dbc.Col([dbc.Input(id='safety_factor',
+                              value='3.3',
+                              type='text',
+                              style={'max-width': 200}),
+                ], width='auto'),
+            ], justify='start'),
+            dbc.FormText(id='total_safety_factor_inform',
+                         children='Safety factor as a percent of system Voc. Number of modules in string is chosen to satisfy Nstring*Vmax<(1-safety_factor)*Vdesign'),
             ])
         ]),
     html.P(''),
@@ -708,8 +784,8 @@ layout = dbc.Container([
 
     html.P(''),
     html.H2('Results'),
-    html.Div(id='load'),
-    html.Div(id='graphs', style={'display': 'none'}),
+    # html.Div(id='load'),
+    dcc.Loading(html.Div(id='graphs')),
     dcc.Store(id='results-store',storage_type='memory'),
     # dbc.Button('Download results as csv',id='download_csv',n_clicks=0),
     # html.Div(id='graphs'),
@@ -840,6 +916,18 @@ layout = dbc.Container([
 #         return not is_open
 #     return is_open
 
+# @app.callback(
+#     Output("calculation_result", "children"),
+#     [Input("input", "value")],
+# )
+# def toggle_collapse(input):
+#     # Do really long calculation
+#     dash.dependencies.Update_Output(id='progress_bar',value=10)
+#     # Do some more calculations
+#     dash.dependencies.Update_Output(id='progress_bar', value=30)
+#     # And some more
+#     dash.dependencies.Update_Output(id='progress_bar', value=100)
+#     return result
 
 
 @app.callback(
@@ -901,20 +989,44 @@ def hide_backside_irradiance_fraction_input(lookup_is_bifacial, manual_is_bifaci
 
     return [style, style]
 
+# XX
+
+@app.callback(
+    [Output('additional_safety_factor', 'value'),
+    Output('additional_safety_factor_loading_div', 'chiildren'),
+     ],
+    [Input('get_suggested_additional_safety_factor', 'n_clicks')
+     ],
+    [State('module_parameter_input_type','active_tab')]
+)
+def update_additional_safety_factor(n_clicks,module_parameter_input_type):
+
+    if n_clicks == 0:
+        return ['1.0','']
+
+    add_diode_factor = module_parameter_input_type=='manual'
+
+    additional_safety_factor = 1.0 + add_diode_factor*0.6
+
+    return ['{:1.1f}'.format(additional_safety_factor), '']
 
 
 @app.callback(
-    Output('safety_factor_inform', 'children'),
-    [Input('lat', 'value'),
-     Input('lon', 'value'),
-     Input('module_parameter_input_type','active_tab'),
-     Input('module_name','value'),
-     Input('Bvoco','value'),
-     Input('Voco','value'),
-
+    [Output('nsrdb_weather_data_safety_factor', 'value'),
+    Output('nsrdb_safety_factor_inform', 'children'),
+     ],
+    [Input('nsrdb_get_weather_data_uncertainty','n_clicks')
+     ],
+    [State('lat', 'value'),
+     State('lon', 'value'),
+     State('module_parameter_input_type','active_tab'),
+     State('module_name','value'),
+     State('Bvoco','value'),
+     State('Voco','value'),
      ]
 )
-def update_output_div(lat, lon, module_parameter_input_type, module_name, Bvoco_manual,Voco_manual):
+def update_output_div(n_clicks,lat, lon, module_parameter_input_type,
+                      module_name, Bvoco_manual,Voco_manual):
     """
     Callback for updating safety factor
 
@@ -927,6 +1039,11 @@ def update_output_div(lat, lon, module_parameter_input_type, module_name, Bvoco_
     -------
 
     """
+
+    if n_clicks==0:
+        return '2.3', 'NSRDB safety factor in percent of system Voc'
+
+
     lat = float(lat)
     lon = float(lon)
     temperature_error = vocmax.get_nsrdb_temperature_error(lat,lon)
@@ -944,21 +1061,119 @@ def update_output_div(lat, lon, module_parameter_input_type, module_name, Bvoco_
     else:
         raise Exception('module parameter lookup type not understood')
 
-    return """Safety factor in percent of system Voc. Number of modules in 
-    string is chosen to satisfy Nstring*Vmax<(1-safety_factor)*Vdesign. For 
+    if temperature_error < 0:
+        temperature_error = 0
+    nsrdb_safety_factor = temperature_error*np.abs(Bvoco/Voco)
+
+    return ['{:1.1f}'.format(nsrdb_safety_factor*100), \
+    """NSRDB safety factor in percent of system Voc. For 
     the chosen location (lat {:3.2f}, lon {:3.2f}), the NSRDB temperature 
-    error of {:2.1f}C combined with Voc temperature coefficient of {:1.2f}%/C 
-    leads to NSRDB data uncertainty of {:2.1%}. Add in Voc manufacturing 
-    uncertainty of 1% to get suggested safety factor of {:1.2%}. 
+    error of {:2.1f} C combined with Voc temperature coefficient of {:1.2f}%/C 
+    leads to NSRDB data uncertainty of {:2.1%}.
     
     """.format(lat,
                lon,
                 temperature_error,
                Bvoco/Voco*100,
                temperature_error*np.abs(Bvoco/Voco),
-               temperature_error * np.abs(Bvoco / Voco) + 0.01
                )
+    ]
 
+
+@app.callback(
+    [Output('extreme_cold_uncertainty', 'value'),
+     Output('extreme_cold_safety_factor_inform', 'children'),
+     Output('extreme_cold_safety_factor_loading_div', 'children'),
+     ],
+    [Input('get_extreme_cold_uncertainty', 'n_clicks')
+     ],
+    [State('lat', 'value'),
+     State('lon', 'value'),
+     State('module_parameter_input_type', 'active_tab'),
+     State('module_name', 'value'),
+     State('Bvoco', 'value'),
+     State('Voco', 'value'),
+     ]
+)
+def extreme_cold_safety_factor(n_clicks, lat, lon, module_parameter_input_type,
+                      module_name, Bvoco_manual, Voco_manual):
+    """
+    Callback for updating safety factor
+
+    Parameters
+    ----------
+    lat
+    lon
+
+    Returns
+    -------
+
+    """
+
+    if n_clicks == 0:
+        return ['0.0', 'Extreme cold safety factor in percent','']
+
+    lat = float(lat)
+    lon = float(lon)
+    temperature_error = vocmax.get_nsrdb_temperature_error(lat, lon)
+
+    if module_parameter_input_type == 'lookup':
+
+        module_parameters = pvtoolslib.cec_modules[module_name].to_dict()
+
+        Bvoco = module_parameters['beta_oc']
+        Voco = module_parameters['V_oc_ref']
+
+    elif module_parameter_input_type == 'manual':
+        Bvoco = float(Bvoco_manual)
+        Voco = float(Voco_manual)
+    else:
+        raise Exception('module parameter lookup type not understood')
+
+    weather, info = get_weather_data(lat, lon)
+    extreme_cold_delta_T = vocmax.calculate_mean_yearly_min_temp(
+        weather.index, weather['temp_air']) - weather['temp_air'].min()
+
+    extreme_cold_safety_factor = extreme_cold_delta_T*np.abs(Bvoco/Voco)
+
+    return ['{:1.1f}'.format(extreme_cold_safety_factor * 100), \
+            """Extreme cold safety factor in percent. For the chosen location 
+            (lat {:3.2f}, lon {:3.2f}), the difference between the mean of 
+            the yearly minimum temperatures and the 19-year minimum is {:2.1f} C 
+            using NSRDB data. Combined with Voc temperature coefficient of {:1.2f}%/C 
+            leads to an extreme cold safety factor of {:2.1%}. 
+        
+            """.format(lat,
+                       lon,
+                       extreme_cold_delta_T,
+                       Bvoco / Voco * 100,
+                       extreme_cold_safety_factor,
+                       ),
+            ''
+            ]
+
+
+@app.callback(
+    [Output('safety_factor', 'value'),
+     ],
+    [Input('nsrdb_weather_data_safety_factor', 'value'),
+    Input('extreme_cold_uncertainty', 'value'),
+    Input('extreme_cold_include', 'value'),
+    Input('additional_safety_factor', 'value'),
+     ]
+)
+def sum_safety_factor(nsrdb_weather_data_safety_factor,
+                       extreme_cold_uncertainty, extreme_cold_include, additional_safety_factor):
+
+
+    if extreme_cold_include==None:
+        extreme_cold_include=0
+
+    safety_factor = float(nsrdb_weather_data_safety_factor) + \
+    float(extreme_cold_include)*float(extreme_cold_uncertainty) + \
+        float(additional_safety_factor)
+
+    return ['{:1.1f}'.format(safety_factor)]
 
 # Callback for finding closest lat/lon in database.
 @app.callback(
@@ -1125,68 +1340,36 @@ def update_Voco(racking_model):
         str(pvlib.pvsystem.TEMP_MODEL_PARAMS['sapm'][racking_model][1]), \
         str(pvlib.pvsystem.TEMP_MODEL_PARAMS['sapm'][racking_model][2])
 
-#
-# @app.callback(
-#     Output('click-data', 'children'),
-#     [Input('map', 'clickData')])
-# def display_click_data(clickData):
-#
-#     # If no type given, do not change lat or lon
-#     if type(clickData)==type(None):
-#         d = {'lat':37.88, 'lon':-122.25}
-#     else:
-#         click_dict = eval(str(clickData))
-#         d = click_dict['points'][0]
-#         print(d)
-#
-#     # update_map(d['lat'],d['lon'])
-#
-#     return str(d)
+
+@app.callback(
+    [Output('lat', 'value'),
+    Output('lon', 'value'),
+    Output('get-weather', 'n_clicks')
+     ],
+    [Input('map', 'clickData')
+     ],
+    [State('get-weather','n_clicks')
+     ])
+def display_click_data(clickData,n_clicks):
+
+    # If no type given, do not change lat or lon
+    if type(clickData)==type(None):
+        d = {'lat':37.88, 'lon':-122.25}
+    else:
+        click_dict = eval(str(clickData))
+        d = click_dict['points'][0]
 
 
-# @app.callback(
-#     Output('lon', 'value'),
-#     [Input('click-data', 'children')])
-# def set_lat(click_data):
-#     print(click_data)
-#     d = eval(click_data)
-#     return d['lon']
-# #
-#
+    # update_map(d['lat'],d['lon'])
 
-# @app.callback(
-#     Output('lat', 'value'),
-#     [Input('click-data', 'children')])
-# def set_lat(click_data):
-#     print(click_data)
-#     d = eval(click_data)
-#     return d['lat']
-# #
+    return ['{:1.3f}'.format(d['lat']), '{:1.3f}'.format(d['lon']), n_clicks+1]
 
 
-# @app.callback(
-#     Output('lon', 'value'),
-#     [Input('click-data', 'children')])
-# def set_lat(click_data):
-#     d = eval(click_data)
-#     return d['lon']
-
-
-# @app.callback(
-#     Output('get-weather', 'n_clicks'),
-#     [Input('click-data', 'children')],
-#     [State('get-weather', 'n_clicks')])
-# def display_click_data(click_data, n_clicks):
-#     return n_clicks+1
-#     # return json.dumps(clickData, indent=2)
-#
-#
 
 
 def make_iv_summary_layout(module_parameters):
     #
-    extra_parameters_dict = vocmax.calculate_sapm_module_parameters(
-        module_parameters)
+    extra_parameters_dict = vocmax.cec_to_sapm(module_parameters)
 
 
     extra_parameters = pd.DataFrame(extra_parameters_dict,index=['Value']).transpose()
@@ -1324,49 +1507,58 @@ def plot_lookup_IV(module_name):
     return [item for sublist in [info_layout,temp_layout] for item in sublist]
 
 
-@app.callback(Output('manual_iv', 'children'),
-              [
-                  Input('module_name_manual', 'value'),
-                  Input('Voco', 'value'),
-                  Input('Bvoco', 'value'),
-                  Input('Mbvoc', 'value'),
-                  Input('n_diode', 'value'),
-                  Input('cells_in_series', 'value'),
-                  Input('FD', 'value'),
-               ]
-              )
-def plot_manual_IV(module_name_manual,
-                 Voco, Bvoco, Mbvoc, n_diode, cells_in_series, FD):
-    try:
-        module_parameters = {
-            'name': module_name_manual,
-            'Voco': float(Voco),
-            'Bvoco': float(Bvoco),
-            'Mbvoc': float(Mbvoc),
-            'n_diode': float(n_diode),
-            'cells_in_series': float(cells_in_series),
-            'iv_model':'sapm',
-            'FD': float(FD)
-        }
 
-        return html.P('Valid Input')
-    #
-    except:
-        return [
-            html.P('Input values invalid.')
-        ]
+# TODO: make input parsers for all fields.
 
 
-@app.callback(Output('load', 'children'),
-              [Input('submit-button', 'n_clicks')
-               ])
-def make_calculating_screen(categ):
-    if categ:
-        return html.Div([
-            dbc.Alert("Calculating...",
-                                   color="primary")
-                ],
-            id='graphs')
+# @app.callback(Output('manual_iv', 'children'),
+#               [
+#                   Input('module_name_manual', 'value'),
+#                   Input('Voco', 'value'),
+#                   Input('Bvoco', 'value'),
+#                   Input('Mbvoc', 'value'),
+#                   Input('n_diode', 'value'),
+#                   Input('cells_in_series', 'value'),
+#                   Input('FD', 'value'),
+#                   Input('efficiency', 'value'),
+#                   Input('lookup_bifaciality', 'value'),
+#                ]
+#               )
+# def plot_manual_IV(module_name_manual,
+#                  Voco, Bvoco, Mbvoc, n_diode, cells_in_series, FD,efficiency,lookup_bifaciality):
+#     # try:
+#     module_parameters = {
+#             'name': module_name_manual,
+#             'Voco': float(Voco),
+#             'Bvoco': float(Bvoco),
+#             'Mbvoc': float(Mbvoc),
+#             'n_diode': float(n_diode),
+#             'cells_in_series': float(cells_in_series),
+#             'iv_model':'sapm',
+#             'FD': float(FD),
+#             'efficiency': float(efficiency),
+#             'lookup_bifaciality': float(lookup_bifaciality),
+#         }
+#
+#     return html.P('Valid Input')
+#
+#     #
+#     # except:
+#     #     return [
+#     #         html.P('Input values invalid.')
+#     #     ]
+
+
+# @app.callback(Output('load', 'children'),
+#               [Input('submit-button', 'n_clicks')
+#                ])
+# def make_calculating_screen(categ):
+#     if categ:
+#         return html.Div([
+#             dbc.Alert("Calculating...",
+#                                    color="primary")
+#                 ],
+#             id='graphs')
 
 
 def get_weather_data(lat,lon):
@@ -1416,11 +1608,13 @@ def get_weather_data(lat,lon):
                 State('n_diode','value'),
                 State('cells_in_series','value'),
                 State('FD','value'),
+                State('efficiency','value'),
                 State('thermal_model_input_type', 'active_tab'),
                 State('racking_model', 'value'),
                 State('a', 'value'),
                 State('b', 'value'),
                 State('DT', 'value'),
+                State('open_circuit_rise','value'),
                 State('mount_type', 'active_tab'),
                 State('surface_tilt', 'value'),
                 State('surface_azimuth', 'value'),
@@ -1429,7 +1623,7 @@ def get_weather_data(lat,lon):
                 State('max_angle', 'value'),
                 State('backtrack', 'value'),
                 State('ground_coverage_ratio', 'value'),
-                State('max_string_voltage', 'value'),
+                State('string_design_voltage', 'value'),
                 State('safety_factor', 'value'),
                 State('lookup_is_bifacial', 'value'),
                 State('manual_is_bifacial', 'value'),
@@ -1442,11 +1636,11 @@ def get_weather_data(lat,lon):
                ]
               )
 def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name, module_name_manual,
-                 Voco, Bvoco, Mbvoc, n_diode, cells_in_series, FD,
-                 thermal_model_input_type, racking_model, a, b, DT,
+                 Voco, Bvoco, Mbvoc, n_diode, cells_in_series, FD, efficiency,
+                 thermal_model_input_type, racking_model, a, b, DT, open_circuit_rise,
                  mount_type, surface_tilt, surface_azimuth,
                  axis_tilt, axis_azimuth, max_angle, backtrack, ground_coverate_ratio,
-                 max_string_voltage,safety_factor,
+                 string_design_voltage,safety_factor,
                  lookup_is_bifacial, manual_is_bifacial,
                  lookup_bifaciality, manual_bifaciality,
                  fixed_tilt_albedo, single_axis_albedo,
@@ -1474,6 +1668,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     R_s
     Adjust
     FD
+    efficiency
     thermal_model_input_type
     racking_model
     a
@@ -1487,7 +1682,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     max_angle
     backtrack
     ground_coverate_ratio
-    max_string_voltage
+    string_design_voltage
     safety_factor
 
     Returns
@@ -1516,11 +1711,14 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         'n_diode': n_diode,
         'cells_in_series': cells_in_series,
         'FD': FD,
+        'efficiency': efficiency,
         'thermal_model_input_type': thermal_model_input_type,
         'racking_model': racking_model,
+        'efficiency': efficiency,
         'a': a,
         'b': b,
         'DT': DT,
+        'open_circuit_rise': open_circuit_rise,
         'mount_type': mount_type,
         'surface_tilt': surface_tilt,
         'surface_azimuth': surface_azimuth,
@@ -1529,7 +1727,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         'max_angle': max_angle,
         'backtrack': str(backtrack),
         'ground_coverage_ratio': ground_coverate_ratio,
-        'max_string_voltage': max_string_voltage,
+        'string_design_voltage': string_design_voltage,
         'iv_model': 'desoto',
         'safety_factor': safety_factor,
         'lookup_is_bifacial': lookup_is_bifacial,
@@ -1557,13 +1755,16 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
 
 
 
+
     if module_parameter_input_type=='lookup':
         cec_parameters = pvtoolslib.cec_modules[module_name].to_dict()
         cec_parameters['FD'] = 1
         cec_parameters['name'] = module_name
+
+        # TODO: change to ASHRAE loss.
         cec_parameters['aoi_model'] = 'no_loss'
 
-        sapm_parameters = vocmax.calculate_sapm_module_parameters(
+        sapm_parameters = vocmax.cec_to_sapm(
             cec_parameters)
 
         module = {**sapm_parameters, **cec_parameters}
@@ -1582,6 +1783,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
             'aoi_model': 'no_loss',
             'iv_model': 'sapm',
             'FD': float(FD),
+            'efficiency': float(efficiency),
             'is_bifacial': manual_is_bifacial,
             'bifaciality_factor': float(manual_bifaciality)
         }
@@ -1589,12 +1791,17 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         print('input type not understood.')
 
     if thermal_model_input_type=='lookup':
-        thermal_model = racking_model
+        thermal_model = {
+            'named_model': racking_model,
+            'open_circuit_rise': open_circuit_rise,
+        }
     elif thermal_model_input_type=='manual':
         thermal_model = {
+            'named_model': 'explicit',
             'a':float(a),
             'b':float(b),
-            'deltaT':float(DT)
+            'deltaT':float(DT),
+            'open_circuit_rise': open_circuit_rise,
         }
     else:
         print('Racking model not understood')
@@ -1624,42 +1831,51 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     else:
         print('error getting racking type')
 
-    max_string_voltage = float(max_string_voltage)
+    string_design_voltage = float(string_design_voltage)
     safety_factor = float(safety_factor)/100
 
     # print('Getting weather data...')
     weather, info = get_weather_data(lat,lon)
 
+    # Simulate system.
     df = vocmax.simulate_system(weather, info,module,
-                                   racking_parameters, thermal_model)
+                                racking_parameters,
+                                thermal_model)
 
-    voc_summary = vocmax.make_voc_summary(df, module,
-                                   max_string_voltage=max_string_voltage,
+    voc_summary = vocmax.make_voc_summary(df, info, module,
+                                   string_design_voltage=string_design_voltage,
                                    safety_factor=safety_factor)
 
 
-    voc_summary_table = voc_summary.rename(index=str,columns={'v_oc':'Voc',
-                                                     'max_string_voltage':'Max String Voltage',
+
+    voc_summary_table = voc_summary.rename(index=str,columns={'max_module_voltage':'Max Module Voltage',
+                                                    'safety_factor': 'Safety Factor',
+                                                     'string_design_voltage':'String Design Voltage',
                                                      'string_length':'String Length',
                                                      'short_note':'Note'
                                                      })
-    voc_summary_table['Note'] = voc_summary_table['Note'].apply(
-        lambda s : s.replace('<br>','.  '))
-    voc_summary_table['Voc'] = voc_summary_table['Voc'].apply(
+
+
+    # voc_summary_table['Note'] = voc_summary_table['Note'].apply(
+    #     lambda s : s.replace('<br>','.  '))
+    voc_summary_table['Max Module Voltage'] = voc_summary_table['Max Module Voltage'].apply(
         lambda s: '{:2.2f}'.format(s))
     voc_summary_table['Cell Temperature'] = voc_summary_table['Cell Temperature'].apply(
         lambda s: '{:2.1f}'.format(s))
+    voc_summary_table['Safety Factor'] = voc_summary_table['Safety Factor'].apply(
+        lambda s: '{:2.1%}'.format(s))
     voc_summary_table['POA Irradiance'] = voc_summary_table['POA Irradiance'].apply(
         lambda s: '{:4.0f}'.format(s))
 
-    voc_summary_table = voc_summary_table[['Voc','Max String Voltage',
+    voc_summary_table = voc_summary_table[['Max Module Voltage','String Design Voltage','Safety Factor',
                                            'String Length','Cell Temperature','POA Irradiance','Note']]
 
+    info['pvtoolslib version'] = pvtoolslib.version
     summary_text = vocmax.make_simulation_summary(df, info,
                                                  module,
                                                  racking_parameters,
                                                  thermal_model,
-                                                 max_string_voltage,
+                                                 string_design_voltage,
                                                  safety_factor)
 
     summary_text_for_download = "data:text/csv;charset=utf-8," + summary_text
@@ -1724,10 +1940,24 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     temp_cell_hist_y = scale_to_hours_per_year(temp_cell_hist_y_raw)[1:]
     temp_cell_hist_x = temp_cell_hist_x_raw[1:-1]
 
+    # POA/temperature 2D histogram
+    df_day = df[df['ghi']>0]
+    x=df_day['effective_irradiance']
+    y=df_day['temp_cell']
+    v_oc=df_day['v_oc']
+
+    P99 = np.percentile(df['v_oc'], 99.9)
+
+    poa_smooth = np.linspace(1, 1100, 100)
+    T_smooth = 25 + (P99 - vocmax.sapm_voc(poa_smooth, 25, module))/module['Bvoco']
+
     # Plotting
     max_pos = np.argmax(np.array(df['v_oc']))
     plot_min_index = np.max([0, max_pos - 1000])
     plot_max_index = np.min([len(df), max_pos + 1000])
+
+    low_pot_color = 'rgb(31, 119, 180)'
+    high_pot_color = 'rgb(255, 127, 14)'
 
     # print('making the layout')
     return_layout = [
@@ -1765,15 +1995,16 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                     annotations=[
                         dict(
                             dict(
-                                x=voc_summary['v_oc'][s],
+                                x=voc_summary['max_module_voltage'][s],
                                 y=voc_hist_y[np.argmin(
-                                    np.abs(voc_summary['v_oc'][s] - voc_hist_x))],
+                                    np.abs(voc_summary['max_module_voltage'][s] - voc_hist_x))],
                                 xref='x',
                                 yref='y',
-                                xanchor='center',
+                                xanchor='left',
+                                yanchor='middle',
                                 text=s,
                                 hovertext=voc_summary['long_note'][s],
-                                textangle=0,
+                                textangle=-90,
                                 font=dict(
                                     color=plot_color[s]
                                 ),
@@ -1815,9 +2046,9 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                 irradiance that produces the given voltage. The various 
                 standard named values for Voc are: 
                 
-                - **P99.5** is the 99.5 percentile Voc value over the 
-                simulation time. This is the recommended value of Voc to use 
-                for designing PV string lengths. Statistically Voc will 
+                - **690.7(A)(3)-P99.5** is the 99.5 percentile Voc value over 
+                the simulation time. This is the recommended value of Voc to 
+                use for designing PV string lengths. Statistically Voc will 
                 exceed this value only 0.5% of the year. Suppose that open 
                 circuit conditions occur 1% of the time randomly. In this 
                 case the probability that the weather and system design 
@@ -1825,81 +2056,197 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                 99.995%, i.e. max system voltage would statistically be 
                 exceeded for 26 minutes per year. 
                 
-                - **Hist** is the historical maximum Voc over the {:.0f} 
-                years of simulation. 
+                - **690.7(A)(3)-P100** is the historical maximum Voc over the 
+                {:.0f} years of simulation. 
                 
-                - **Trad** is the traditional value used for maximum Voc. 
-                This is found using the mean minimum yearly dry bulb 
-                temperature (i.e. find the minimum temperature in each year 
-                and take the mean of those values). The Voc is calculated 
-                assuming 1 sun irradiance (1000 W/m^2), the mean minimum 
-                yearly dry bulb temperature and the module paramaeters.
+                - **690.7(A)(1)-ASHRAE** is the traditional value used for 
+                maximum Voc. This is found using the mean minimum yearly dry 
+                bulb temperature (i.e. find the minimum temperature in each 
+                year and take the mean of those values) from the ASHRAE 2017 
+                database. The Voc is calculated assuming 1 sun irradiance (
+                1000 W/m^2), the mean minimum yearly dry bulb temperature and 
+                the module paramaeters. 
                 
-                - **Day** is similar to the trad value, except the mean 
-                minimum yearly daytime dry bulb temperature is used as the 
-                cell temperature for calculating Voc. Daytime is defined as 
-                GHI greater than 150 W/m^2. The Voc is calculated assuming 1 
-                sun irradiance (1000 W/m^2), the mean minimum yearly daytime 
-                dry bulb temperature and the module paramaeters. 
+                - **690.7(A)(2)-ASHRAE** uses the temperature derate table in 
+                NEC 2017 and the ASHRAE mean minimum yearly dry bulb 
+                temperature. 
+                
+                
+                - **690.7(A)(1)-NSRDB** is similar to 690.7(A)(1)-ASHRAE 
+                except it uses the NSRDB as the datasource. 
+                
+                - **690.7(A)(3)-DAY** is similar to the 690.7(A)(1)-NSRDB 
+                value, except the mean minimum yearly daytime dry bulb 
+                temperature is used as the cell temperature for calculating 
+                Voc. Daytime is defined as GHI greater than 150 W/m^2. The 
+                Voc is calculated assuming 1 sun irradiance (1000 W/m^2), 
+                the mean minimum yearly daytime dry bulb temperature and the 
+                module paramaeters. 
     
                  """.replace('    ','')
                 ),
             ]),
         ],style={'margin-bottom':30}),
-        html.P("""Figure 2 shows a histogram of the air and cell temperature. 
-        A spike at 0 C is sometimes observed and explained below under 
-        frequently asked questions. 
+        html.P(''),
+        html.P("""Figure 2 shows a scatter plot of POA irradiance and cell 
+        temperature, highlighting the region with a Voc greater than the 
+        99.9'th percentile. This is useful for statistically inspecting which 
+        conditions will lead to maximum Voc. 
 
         """),
-        dcc.Graph(
-            id='temperature-histogram',
-            figure={
-                'data': [
-                    {'x': temp_air_hist_x, 'y': temp_air_hist_y,
-                     'type': 'line', 'name': 'Air Temperature'},
-                    {'x': temp_cell_hist_x, 'y': temp_cell_hist_y,
-                     'type': 'line', 'name': 'Cell Temperature'},
-                ],
-                'layout': go.Layout(
-                    title=go.layout.Title(
-                        text='Figure 2. Histogram of cell and air temperature',
-                        xref='paper',
-                        x=0
+        dcc.Graph(figure=dict(
+            data=[
+                go.Scattergl(
+                    x=x[v_oc<=P99],
+                    y=y[v_oc<=P99],
+                    mode='markers',
+                    name='Voc<P99.9 Voc',
+                    marker=dict(color=low_pot_color,size=4, opacity=0.04)
+                ),
+                go.Histogram(
+                    x=x[v_oc <= P99],
+                    name='Voc<P99.9',
+                    marker=dict(color=low_pot_color),
+                    yaxis='y2',
+                    nbinsx=100,
+                    showlegend=False
+                ),
+                go.Histogram(
+                    x=np.tile(x[v_oc > P99],(100)),
+                    name='Voc>P99.9',
+                    marker=dict(color=high_pot_color),
+                    yaxis='y2',
+                    nbinsx=100,
+                    showlegend=False
+                ),
+                go.Histogram(
+                    y=y[v_oc <= P99],
+                    name='Voc<P99.9',
+                    marker=dict(color=low_pot_color),
+                    xaxis='x2',
+                    nbinsy=100,
+                    showlegend=False
+                ),
+                go.Histogram(
+                    y=np.tile(y[v_oc>P99],(100)),
+                    name='Voc>P99.9',
+                    marker=dict(color=high_pot_color),
+                    xaxis='x2',
+                    nbinsy=100,
+                    showlegend=False
+                ),
+                go.Scattergl(
+                    x=x[v_oc>P99],
+                    y=y[v_oc>P99],
+                    mode='markers',
+                    name='Voc>P99.9 Voc',
+                    marker=dict(color=high_pot_color, size=4, opacity=0.4)
+                ),
+                go.Scatter(
+                    x=poa_smooth,
+                    y=T_smooth,
+                    mode='lines',
+                    name='P99.9 Voc Threshold',
+                ),
+            ],
+            layout=go.Layout(
+                title=go.layout.Title(
+                            text='Figure 2. Scatterplot of POA irradiance and cell temperature.',
+                            xref='paper',
+                            x=0
                     ),
-                    xaxis={'title': 'Temperature (C)'},
-                    yaxis={'title': 'hours/year'},
-                    margin={'l': 60, 'b': 120, 't': 30, 'r': 60},
-                    hovermode='closest',
-                    # annotations=[
-                    #     dict(
-                    #         dict(
-                    #             x=temperature_poi[s]['value'],
-                    #             y=temp_cell_hist_y[np.argmin(
-                    #                 np.abs(temperature_poi[s][
-                    #                            'value'] - temp_cell_hist_x))],
-                    #             xref='x',
-                    #             yref='y',
-                    #             xanchor='center',
-                    #             text=temperature_poi[s]['short_label'],
-                    #             hovertext=temperature_poi[s]['hover_label'],
-                    #             textangle=0,
-                    #             font=dict(
-                    #                 color=temperature_poi[s]['color']
-                    #             ),
-                    #             arrowcolor=temperature_poi[s]['color'],
-                    #             showarrow=True,
-                    #             align='left',
-                    #             standoff=2,
-                    #             arrowhead=4,
-                    #             ax=0,
-                    #             ay=-40
-                    #         ),
-                    #         align='left'
-                    #     )
-                    #     for s in temperature_poi]
+                margin={'l': 60, 'b': 120, 't': 30, 'r': 60},
+                showlegend=True,
+                legend=dict(x=.05, y=0.75),
+                autosize=True,
+                # width=1100,
+                height=700,
+                xaxis=dict(
+                    domain=[0, 0.85],
+                    showgrid=True,
+                    zeroline=False,
+                    title='POA Irradiance (W/m2)'
+                ),
+                yaxis=dict(
+                    domain=[0, 0.85],
+                    showgrid=True,
+                    zeroline=False,
+                    title='Cell Temperature (C)',
+                    range=[np.min(y), np.max(y)]
+                ),
+                hovermode='closest',
+                bargap=0,
+                barmode='overlay',
+                xaxis2=dict(
+                    domain=[0.85, 1],
+                    showgrid=False,
+                    zeroline=False,
+                    title='Occurrences (AU)'
+                ),
+                yaxis2=dict(
+                    domain=[0.85, 1],
+                    showgrid=False,
+                    zeroline=False,
+                    title='Occurrences (AU)'
                 )
-            }
+            )
+            )
         ),
+
+        # html.P("""Figure 3 shows a histogram of the air and cell temperature.
+        # A spike at 0 C is sometimes observed and explained below under
+        # frequently asked questions.
+        #
+        # """),
+        # dcc.Graph(
+        #     id='temperature-histogram',
+        #     figure={
+        #         'data': [
+        #             {'x': temp_air_hist_x, 'y': temp_air_hist_y,
+        #              'type': 'line', 'name': 'Air Temperature'},
+        #             {'x': temp_cell_hist_x, 'y': temp_cell_hist_y,
+        #              'type': 'line', 'name': 'Cell Temperature'},
+        #         ],
+        #         'layout': go.Layout(
+        #             title=go.layout.Title(
+        #                 text='Figure 3. Histogram of cell and air temperature',
+        #                 xref='paper',
+        #                 x=0
+        #             ),
+        #             xaxis={'title': 'Temperature (C)'},
+        #             yaxis={'title': 'hours/year'},
+        #             margin={'l': 60, 'b': 120, 't': 30, 'r': 60},
+        #             hovermode='closest',
+        #             # annotations=[
+        #             #     dict(
+        #             #         dict(
+        #             #             x=temperature_poi[s]['value'],
+        #             #             y=temp_cell_hist_y[np.argmin(
+        #             #                 np.abs(temperature_poi[s][
+        #             #                            'value'] - temp_cell_hist_x))],
+        #             #             xref='x',
+        #             #             yref='y',
+        #             #             xanchor='center',
+        #             #             text=temperature_poi[s]['short_label'],
+        #             #             hovertext=temperature_poi[s]['hover_label'],
+        #             #             textangle=0,
+        #             #             font=dict(
+        #             #                 color=temperature_poi[s]['color']
+        #             #             ),
+        #             #             arrowcolor=temperature_poi[s]['color'],
+        #             #             showarrow=True,
+        #             #             align='left',
+        #             #             standoff=2,
+        #             #             arrowhead=4,
+        #             #             ax=0,
+        #             #             ay=-40
+        #             #         ),
+        #             #         align='left'
+        #             #     )
+        #             #     for s in temperature_poi]
+        #         )
+        #     }
+        # ),
 
         dcc.Markdown(
             """Figure 3 shows the time dependence of cell temperature, 
@@ -1997,23 +2344,17 @@ def download_simulation_data():
     p = flask.request.args
 
 
-
     filedata = pvtoolslib.get_s3_filename_df()
     filedata_closest = nsrdbtools.find_closest_datafiles(float(p['lat']),
                                                          float(p['lon']),
                                                          filedata)
 
-    print('test stuff')
-    print(type(p['lookup_is_bifacial']))
-    print(p['lookup_is_bifacial']=='True')
-    print(p['lookup_bifaciality'])
     if p['module_parameter_input_type']=='lookup':
         cec_parameters = pvtoolslib.cec_modules[p['module_name']].to_dict()
         cec_parameters['FD'] = 1
         cec_parameters['name'] = p['module_name']
         cec_parameters['aoi_model'] = 'no_loss'
-        sapm_parameters = vocmax.calculate_sapm_module_parameters(
-            cec_parameters)
+        sapm_parameters = vocmax.cec_to_sapm(cec_parameters)
         sapm_parameters['iv_model'] = 'sapm'
         module = {**sapm_parameters, **cec_parameters}
 
@@ -2033,6 +2374,7 @@ def download_simulation_data():
             'aoi_model': 'no_loss',
             'iv_model': 'sapm',
             'FD': float(p['FD']),
+            'efficiency': float(p['efficiency']),
             'is_bifacial': p['manual_is_bifacial']=='True',
             'bifaciality_factor': float(p['manual_bifaciality']),
         }
@@ -2042,15 +2384,20 @@ def download_simulation_data():
         print('input type not understood.')
 
     if p['thermal_model_input_type']=='lookup':
-        thermal_model = p['racking_model']
-        thermal_model_dict = {'thermal_model': thermal_model}
+
+        thermal_model = {
+            'named_model':  p['racking_model'],
+            'open_circuit_rise': p['open_circuit_rise']
+        }
+
     elif p['thermal_model_input_type']=='manual':
         thermal_model = {
+            'named_model': 'explicit',
             'a':float(p['a']),
             'b':float(p['b']),
-            'deltaT':float(p['DT'])
+            'deltaT':float(p['DT']),
+            'open_circuit_rise': p['open_circuit_rise'],
         }
-        thermal_model_dict = thermal_model
     else:
         print('Racking model not understood')
 
@@ -2078,7 +2425,7 @@ def download_simulation_data():
     else:
         print('error getting racking type')
 
-    max_string_voltage = float(p['max_string_voltage'])
+    string_design_voltage = float(p['string_design_voltage'])
 
     # print('String Voltage Calculator:Input processed:')
 
@@ -2119,7 +2466,7 @@ def download_simulation_data():
     #Convert DF
     str_io = io.StringIO()
     pd.DataFrame(
-        {**info, **module, **thermal_model_dict, **racking_parameters},
+        {**info, **module, **thermal_model, **racking_parameters},
                  index=['']).to_csv(str_io, sep=",",index=False)
     # pd.DataFrame(module_parameters, index=['']).to_csv(str_io, sep=",")
     # pd.DataFrame(racking_parameters, index=['']).to_csv(str_io, sep=",")
