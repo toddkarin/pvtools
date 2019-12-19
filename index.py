@@ -1,5 +1,5 @@
 """
-Main page for pvtools website. Run this script
+Main page for pvtools website. Run this script to start.
 
 04/09/2019
 toddkarin
@@ -16,7 +16,6 @@ import dash_bootstrap_components as dbc
 # # import plotly.plotly as py
 # from flask_caching import Cache
 from dash.dependencies import Input, Output, State
-# import vocmaxlib
 # import numpy as np
 # import pvlib
 # import nsrdbtools
