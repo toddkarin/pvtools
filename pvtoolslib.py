@@ -143,12 +143,12 @@ def get_s3_csv(filename):
     return df
 
 
-print('Getting ashrae data...')
+# print('Getting ashrae data...')
 if os.path.exists('2017DesignConditions_s.xlsx.csv'):
     ashrae = pd.read_csv('2017DesignConditions_s.xlsx.csv')
 else:
     ashrae = get_s3_csv(filename='2017DesignConditions_s.xlsx.csv')
-print('Done.')
+# print('Done.')
 
 
 def build_local_nsrdb_compressed_df():
