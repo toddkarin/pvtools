@@ -39,6 +39,6 @@ s3transfer==0.2.0
 six==1.12.0
 traitlets==4.3.2
 urllib3==1.24.2
-Werkzeug==0.15.0
+Werkzeug==0.15.3
 pvcz==0.2.3
 vocmax==0.0.10
