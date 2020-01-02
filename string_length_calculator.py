@@ -290,7 +290,7 @@ layout = dbc.Container([
                         )
                     )
                 ], tab_id='lookup', label='Library Lookup'),
-                # TODO: Add units to the lookup table.
+
                 dbc.Tab([
                     dbc.Card(
                         dbc.CardBody(
@@ -786,7 +786,8 @@ layout = dbc.Container([
     html.H2('Results'),
     # html.Div(id='load'),
     dcc.Loading(html.Div(id='graphs')),
-    dcc.Store(id='results-store',storage_type='memory'),
+    # dcc.Store(id='annotation-store'),
+    dcc.Store(id='results-store'),
     # dbc.Button('Download results as csv',id='download_csv',n_clicks=0),
     # html.Div(id='graphs'),
 
@@ -1415,7 +1416,13 @@ def make_iv_summary_layout(module_parameters):
                             margin={'l': 40, 'b': 90, 't': 10, 'r': 10},
                         hovermode='closest',
                         )
-                    }
+                    },
+                    config=dict(
+                        toImageButtonOptions=dict(
+                            scale=5,
+                            filename='IV_curves',
+                        )
+                    )
                 ),
             ],md=6),
             dbc.Col([
@@ -1594,7 +1601,9 @@ def get_weather_data(lat,lon):
 
 
 
-@app.callback(Output('graphs', 'children'),
+@app.callback([Output('graphs', 'children'),
+                Output('results-store', 'children'),
+               ],
               [Input('submit-button', 'n_clicks')
                ],
               [State('lat', 'value'),
@@ -1695,7 +1704,9 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
 
     if n_clicks<1:
         # print('Not running simulation.')
-        return []
+        return [
+            [],[]
+                ]
 
 
 
@@ -1847,6 +1858,12 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                                    safety_factor=safety_factor,
                                     ashrae=pvtoolslib.ashrae)
 
+    voc_summary_for_plot = voc_summary.rename(index={
+        '690.7(A)(3)-P99.5': '690.7(A)(3)-P99.5 + SF',
+        '690.7(A)(3)-P100': '690.7(A)(3)-P100 + SF'}
+    )
+
+    voc_summary_for_plot['plot_voltage'] = voc_summary_for_plot['max_module_voltage']*(1+voc_summary_for_plot['safety_factor'])
 
 
     voc_summary_table = voc_summary.rename(index=str,columns={'max_module_voltage':'Max Module Voltage',
@@ -1907,8 +1924,8 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     colors = plotly.colors.DEFAULT_PLOTLY_COLORS
     plot_color = {}
     pc = 1
-    for s in list(voc_summary.index):
-        plot_color[s] = colors[pc]
+    for s in list(voc_summary_for_plot.index):
+        voc_summary_for_plot.loc[s,'plot_color'] = colors[pc]
         pc = pc+1
     # voc_summary['plot_color'] = colors[0:len(voc_summary)]
 
@@ -1921,7 +1938,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     # Voc histogram
     voc_hist_y_raw, voc_hist_x_raw = np.histogram(df['v_oc'],
                         bins=np.linspace(df['v_oc'].max() * 0.6,
-                                         df['v_oc'].max() + 1, 400))
+                                         df['v_oc'].max() + 1, 200))
 
     voc_hist_y = scale_to_hours_per_year(voc_hist_y_raw)[1:]
     voc_hist_x = voc_hist_x_raw[1:-1]
@@ -1961,6 +1978,8 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
     low_pot_color = 'rgb(31, 119, 180)'
     high_pot_color = 'rgb(255, 127, 14)'
 
+    annotation_dropdown_choices = [{'label': k, 'value': k} for k in voc_summary_for_plot.index]
+
     # print('making the layout')
     return_layout = [
         html.P("""Using the weather data and the module parameters, the open 
@@ -1977,53 +1996,18 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         information. 
 
         """),
-        dcc.Graph(
-            id='Voc-histogram',
-            figure={
-                'data': [
-                    {'x': voc_hist_x, 'y': voc_hist_y, 'type': 'line',
-                     'name': 'Voc'}
-                ],
-                'layout': go.Layout(
-                    title=go.layout.Title(
-                        text='Figure 1. Histogram of Voc values over the simulation time.',
-                        xref='paper',
-                        x=0
-                    ),
-                    xaxis={'title': 'Voc (Volts)'},
-                    yaxis={'title': 'hours/year'},
-                    # margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
-                    hovermode='closest',
-                    annotations=[
-                        dict(
-                            dict(
-                                x=voc_summary['max_module_voltage'][s],
-                                y=voc_hist_y[np.argmin(
-                                    np.abs(voc_summary['max_module_voltage'][s] - voc_hist_x))],
-                                xref='x',
-                                yref='y',
-                                xanchor='left',
-                                yanchor='middle',
-                                text=s,
-                                hovertext=voc_summary['long_note'][s],
-                                textangle=-90,
-                                font=dict(
-                                    color=plot_color[s]
-                                ),
-                                arrowcolor=plot_color[s],
-                                # bordercolor=plot_color[s],
-                                showarrow=True,
-                                align='left',
-                                standoff=2,
-                                arrowhead=4,
-                                ax=0,
-                                ay=-40
-                            ),
-                            align='left'
-                        )
-                        for s in list(voc_summary.index)]
-                )
-            }
+        dcc.Dropdown(
+            id='annotation_voc_histogram',
+            options=annotation_dropdown_choices,
+            multi=True,
+            value=voc_summary_for_plot.index
+        ),
+        dcc.Loading(
+            html.Div(
+                id='Voc-histogram-div',
+                children=[]
+                # make_voc_histogram_figure(voc_hist_x,voc_hist_y,voc_summary_for_plot)
+            ),
         ),
         html.P(''),
         html.P("""The table below shows the recommended Voc values, voltage 
@@ -2096,102 +2080,109 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         conditions will lead to maximum Voc. 
 
         """),
-        dcc.Graph(figure=dict(
-            data=[
-                go.Scattergl(
-                    x=x[v_oc<=P99],
-                    y=y[v_oc<=P99],
-                    mode='markers',
-                    name='Voc<P99.9 Voc',
-                    marker=dict(color=low_pot_color,size=4, opacity=0.04)
-                ),
-                go.Histogram(
-                    x=x[v_oc <= P99],
-                    name='Voc<P99.9',
-                    marker=dict(color=low_pot_color),
-                    yaxis='y2',
-                    nbinsx=100,
-                    showlegend=False
-                ),
-                go.Histogram(
-                    x=np.tile(x[v_oc > P99],(100)),
-                    name='Voc>P99.9',
-                    marker=dict(color=high_pot_color),
-                    yaxis='y2',
-                    nbinsx=100,
-                    showlegend=False
-                ),
-                go.Histogram(
-                    y=y[v_oc <= P99],
-                    name='Voc<P99.9',
-                    marker=dict(color=low_pot_color),
-                    xaxis='x2',
-                    nbinsy=100,
-                    showlegend=False
-                ),
-                go.Histogram(
-                    y=np.tile(y[v_oc>P99],(100)),
-                    name='Voc>P99.9',
-                    marker=dict(color=high_pot_color),
-                    xaxis='x2',
-                    nbinsy=100,
-                    showlegend=False
-                ),
-                go.Scattergl(
-                    x=x[v_oc>P99],
-                    y=y[v_oc>P99],
-                    mode='markers',
-                    name='Voc>P99.9 Voc',
-                    marker=dict(color=high_pot_color, size=4, opacity=0.4)
-                ),
-                go.Scatter(
-                    x=poa_smooth,
-                    y=T_smooth,
-                    mode='lines',
-                    name='P99.9 Voc Threshold',
-                ),
-            ],
-            layout=go.Layout(
-                title=go.layout.Title(
-                            text='Figure 2. Scatterplot of POA irradiance and cell temperature.',
-                            xref='paper',
-                            x=0
+        dcc.Graph(
+            figure=dict(
+                data=[
+                    go.Scattergl(
+                        x=x[v_oc<=P99],
+                        y=y[v_oc<=P99],
+                        mode='markers',
+                        name='Voc<P99.9 Voc',
+                        marker=dict(color=low_pot_color,size=4, opacity=0.04)
                     ),
-                margin={'l': 60, 'b': 120, 't': 30, 'r': 60},
-                showlegend=True,
-                legend=dict(x=.05, y=0.75),
-                autosize=True,
-                # width=1100,
-                height=700,
-                xaxis=dict(
-                    domain=[0, 0.85],
-                    showgrid=True,
-                    zeroline=False,
-                    title='POA Irradiance (W/m2)'
-                ),
-                yaxis=dict(
-                    domain=[0, 0.85],
-                    showgrid=True,
-                    zeroline=False,
-                    title='Cell Temperature (C)',
-                    range=[np.min(y), np.max(y)]
-                ),
-                hovermode='closest',
-                bargap=0,
-                barmode='overlay',
-                xaxis2=dict(
-                    domain=[0.85, 1],
-                    showgrid=False,
-                    zeroline=False,
-                    title='Occurrences (AU)'
-                ),
-                yaxis2=dict(
-                    domain=[0.85, 1],
-                    showgrid=False,
-                    zeroline=False,
-                    title='Occurrences (AU)'
+                    go.Histogram(
+                        x=x[v_oc <= P99],
+                        name='Voc<P99.9',
+                        marker=dict(color=low_pot_color),
+                        yaxis='y2',
+                        nbinsx=100,
+                        showlegend=False
+                    ),
+                    go.Histogram(
+                        x=np.tile(x[v_oc > P99],(100)),
+                        name='Voc>P99.9',
+                        marker=dict(color=high_pot_color),
+                        yaxis='y2',
+                        nbinsx=100,
+                        showlegend=False
+                    ),
+                    go.Histogram(
+                        y=y[v_oc <= P99],
+                        name='Voc<P99.9',
+                        marker=dict(color=low_pot_color),
+                        xaxis='x2',
+                        nbinsy=100,
+                        showlegend=False
+                    ),
+                    go.Histogram(
+                        y=np.tile(y[v_oc>P99],(100)),
+                        name='Voc>P99.9',
+                        marker=dict(color=high_pot_color),
+                        xaxis='x2',
+                        nbinsy=100,
+                        showlegend=False
+                    ),
+                    go.Scattergl(
+                        x=x[v_oc>P99],
+                        y=y[v_oc>P99],
+                        mode='markers',
+                        name='Voc>P99.9 Voc',
+                        marker=dict(color=high_pot_color, size=4, opacity=0.4)
+                    ),
+                    go.Scatter(
+                        x=poa_smooth,
+                        y=T_smooth,
+                        mode='lines',
+                        name='P99.9 Voc Threshold',
+                    ),
+                ],
+                layout=go.Layout(
+                    title=go.layout.Title(
+                                text='Figure 2. Scatterplot of POA irradiance and cell temperature.',
+                                xref='paper',
+                                x=0
+                        ),
+                    margin={'l': 60, 'b': 120, 't': 30, 'r': 60},
+                    showlegend=True,
+                    legend=dict(x=.05, y=0.75),
+                    autosize=True,
+                    # width=1100,
+                    height=700,
+                    xaxis=dict(
+                        domain=[0, 0.85],
+                        showgrid=True,
+                        zeroline=False,
+                        title='POA Irradiance (W/m2)'
+                    ),
+                    yaxis=dict(
+                        domain=[0, 0.85],
+                        showgrid=True,
+                        zeroline=False,
+                        title='Cell Temperature (C)',
+                        range=[np.min(y), np.max(y)]
+                    ),
+                    hovermode='closest',
+                    bargap=0,
+                    barmode='overlay',
+                    xaxis2=dict(
+                        domain=[0.85, 1],
+                        showgrid=False,
+                        zeroline=False,
+                        title='Occurrences (AU)'
+                    ),
+                    yaxis2=dict(
+                        domain=[0.85, 1],
+                        showgrid=False,
+                        zeroline=False,
+                        title='Occurrences (AU)'
+                    )
                 )
-            )
+            ),
+            config=dict(
+                toImageButtonOptions=dict(
+                    scale=5,
+                    filename='poa_cell-temp_2D_scatter',
+                )
             )
         ),
 
@@ -2281,6 +2272,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                     yaxis={'title': 'Value'},
                     margin={'l': 60, 'b': 120, 't': 30, 'r': 60},
                     hovermode='closest',
+                    legend=dict(x=.02, y=0.95),
                     annotations=[
                         dict(
                             dict(
@@ -2312,7 +2304,13 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
                             align='center'
                         )]
                 )
-            }
+            },
+            config=dict(
+                toImageButtonOptions=dict(
+                    scale=5,
+                    filename='timeseries',
+                )
+            )
         ),
         dcc.Markdown(
             """Download the simulation results as csv files here (use chrome or firefox)
@@ -2336,8 +2334,107 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
             ]),
     ]
 
-    return return_layout
+    return [
+        return_layout,
+        dict(voc_hist_x=voc_hist_x,
+             voc_hist_y=voc_hist_y,
+             voc_summary_for_plot_json=voc_summary_for_plot.to_json()
+             )
+        ]
 
+
+
+def make_voc_histogram_figure(voc_hist_x,voc_hist_y,voc_summary_for_plot,annotation_voc_histogram_choice):
+    """
+
+    Make the voc histogram figure. Needs to be in a separate function so that
+    the dropdown callback works.
+
+    Parameters
+    ----------
+    voc_hist_x
+    voc_hist_y
+    voc_summary_for_plot
+    annotation_voc_histogram_choice
+
+    Returns
+    -------
+
+    """
+    return dcc.Graph(
+        id='Voc-histogram',
+        figure={
+            'data': [
+                {'x': voc_hist_x,
+                 'y': voc_hist_y,
+                 'type': 'bar',
+                 'name': 'Voc'}
+            ],
+            'layout': go.Layout(
+                title=go.layout.Title(
+                    text='Figure 1. Histogram of Voc values over the simulation time.',
+                    xref='paper',
+                    x=0
+                ),
+                xaxis={'title': 'Voc (Volts)'},
+                yaxis={'title': 'hours/year'},
+                margin={'l': 60, 'b': 120, 't': 30, 'r': 60},
+                hovermode='closest',
+                annotations=[
+                    dict(
+                        dict(
+                            x=voc_summary_for_plot['plot_voltage'][s],
+                            y=voc_hist_y[np.argmin(
+                                np.abs(voc_summary_for_plot['plot_voltage'][
+                                           s] - voc_hist_x))],
+                            xref='x',
+                            yref='y',
+                            xanchor='left',
+                            yanchor='middle',
+                            text=s,
+                            hovertext=voc_summary_for_plot['long_note'][s],
+                            textangle=-90,
+                            font=dict(
+                                color=voc_summary_for_plot['plot_color'][s]
+                            ),
+                            arrowcolor=voc_summary_for_plot['plot_color'][s],
+                            # bordercolor=plot_color[s],
+                            showarrow=True,
+                            align='left',
+                            standoff=2,
+                            arrowhead=4,
+                            ax=0,
+                            ay=-40
+                        ),
+                        align='left'
+                    )
+                    for s in list(annotation_voc_histogram_choice)]
+            )
+        },
+        config=dict(
+            toImageButtonOptions=dict(
+                scale=5,
+                filename='Voc_histogram',
+            )
+        )
+    )
+
+@app.callback(Output('Voc-histogram-div', 'children'),
+              [Input('annotation_voc_histogram', 'value')
+               ],
+              [State('results-store','children')])
+def plot_lookup_IV(annotation_voc_histogram_choice, results):
+
+
+    voc_summary_for_plot = pd.read_json(results['voc_summary_for_plot_json'])
+
+
+
+    return make_voc_histogram_figure(results['voc_hist_x'],
+                                     results['voc_hist_y'],
+                                     voc_summary_for_plot,
+                                     annotation_voc_histogram_choice
+                                     )
 
 @app.server.route('/dash/download_simulation_data')
 def download_simulation_data():
