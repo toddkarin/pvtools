@@ -1235,8 +1235,9 @@ def update_output_div(n_clicks, lat, lon):
      State('lon', 'value')])
 def update_map_callback(n_clicks, lat, lon):
     # print('Updating the map')
-    if n_clicks>0:
-        print('String Voltage Calculator:new weather location:')
+    # if n_clicks>0:
+        # print('Verbose:String Voltage Calculator:new weather location:')
+
     filedata = pvtoolslib.get_s3_filename_df()
 
     filedata_closest = nsrdbtools.find_closest_datafiles(float(lat), float(lon),
@@ -1762,7 +1763,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
 
 
     is_default_calculation = request_str[0:22] == '?lat=37.88&lon=-122.25'
-    print('String Voltage Calculator:Calculate started:default=' + str(is_default_calculation))
+    print('Verbose;String Voltage Calculator;Calculate started;default=' + str(is_default_calculation))
     # print(request_str)
 
 
@@ -2443,7 +2444,7 @@ def plot_lookup_IV(annotation_voc_histogram_choice, results):
 
 @app.server.route('/dash/download_simulation_data')
 def download_simulation_data():
-    print('String Voltage Calculator:Download Simulation Data:')
+    print('Verbose;String Voltage Calculator;Download Simulation Data:')
     # value = flask.request.args.get('lat')
     p = flask.request.args
 
