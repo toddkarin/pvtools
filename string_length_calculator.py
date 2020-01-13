@@ -1462,7 +1462,8 @@ def plot_lookup_IV(module_name):
     module_parameters = pvtoolslib.cec_modules[module_name].to_dict()
     module_parameters['FD'] = 1
     module_parameters['name'] = module_name
-    module_parameters['aoi_model'] = 'no_loss'
+    module_parameters['aoi_model'] = 'ashrae'
+    module_parameters['ashrae_iam_param'] = 0.05
     module_parameters['iv_model'] = 'desoto'
 
     info_df = pd.DataFrame.from_dict({
@@ -1772,8 +1773,10 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
         cec_parameters['FD'] = 1
         cec_parameters['name'] = module_name
 
-        # TODO: change to ASHRAE loss.
-        cec_parameters['aoi_model'] = 'no_loss'
+
+        # cec_parameters['aoi_model'] = 'no_loss'
+        cec_parameters['aoi_model'] = 'ashrae'
+        cec_parameters['ashrae_iam_param'] = 0.05
 
         sapm_parameters = vocmax.cec_to_sapm(
             cec_parameters)
@@ -1791,7 +1794,8 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
             'Mbvoc': float(Mbvoc),
             'n_diode': float(n_diode),
             'cells_in_series': float(cells_in_series),
-            'aoi_model': 'no_loss',
+            'aoi_model': 'ashrae',
+            'ashrae_iam_param': 0.05,
             'iv_model': 'sapm',
             'FD': float(FD),
             'efficiency': float(efficiency),
@@ -2002,6 +2006,7 @@ def run_simulation(n_clicks, lat, lon,  module_parameter_input_type, module_name
             multi=True,
             value=voc_summary_for_plot.index
         ),
+        html.P(''),
         dcc.Loading(
             html.Div(
                 id='Voc-histogram-div',
@@ -2452,7 +2457,8 @@ def download_simulation_data():
         cec_parameters = pvtoolslib.cec_modules[p['module_name']].to_dict()
         cec_parameters['FD'] = 1
         cec_parameters['name'] = p['module_name']
-        cec_parameters['aoi_model'] = 'no_loss'
+        cec_parameters['aoi_model'] = 'ashrae',
+        cec_parameters['ashrae_iam_param'] = 0.05,
         sapm_parameters = vocmax.cec_to_sapm(cec_parameters)
         sapm_parameters['iv_model'] = 'sapm'
         module = {**sapm_parameters, **cec_parameters}
@@ -2470,7 +2476,8 @@ def download_simulation_data():
             'Mbvoc': float(p['Mbvoc']),
             'n_diode': float(p['n_diode']),
             'cells_in_series': float(p['cells_in_series']),
-            'aoi_model': 'no_loss',
+            'aoi_model': 'ashrae',
+            'ashrae_iam_param': 0.05,
             'iv_model': 'sapm',
             'FD': float(p['FD']),
             'efficiency': float(p['efficiency']),
