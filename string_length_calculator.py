@@ -2444,7 +2444,7 @@ def plot_lookup_IV(annotation_voc_histogram_choice, results):
 
 @app.server.route('/dash/download_simulation_data')
 def download_simulation_data():
-    print('Verbose;String Voltage Calculator;Download Simulation Data:')
+    print('Verbose;String Voltage Calculator;Download Simulation Data;')
     # value = flask.request.args.get('lat')
     p = flask.request.args
 
@@ -2458,8 +2458,8 @@ def download_simulation_data():
         cec_parameters = pvtoolslib.cec_modules[p['module_name']].to_dict()
         cec_parameters['FD'] = 1
         cec_parameters['name'] = p['module_name']
-        cec_parameters['aoi_model'] = 'ashrae',
-        cec_parameters['ashrae_iam_param'] = 0.05,
+        cec_parameters['aoi_model'] = 'ashrae'
+        cec_parameters['ashrae_iam_param'] = 0.05
         sapm_parameters = vocmax.cec_to_sapm(cec_parameters)
         sapm_parameters['iv_model'] = 'sapm'
         module = {**sapm_parameters, **cec_parameters}
@@ -2503,10 +2503,10 @@ def download_simulation_data():
             'a':float(p['a']),
             'b':float(p['b']),
             'deltaT':float(p['DT']),
-            'open_circuit_rise': p['open_circuit_rise'],
+            'open_circuit_rise': float(p['open_circuit_rise']),
         }
     else:
-        print('Racking model not understood')
+        print('Verbose:Racking model not understood')
 
     if p['mount_type']=='fixed_tilt':
         racking_parameters = {
@@ -2530,22 +2530,25 @@ def download_simulation_data():
             'bifacial_model': 'proportional',
         }
     else:
-        print('error getting racking type')
+        print('Verbose:error getting racking type')
 
     string_design_voltage = float(p['string_design_voltage'])
 
     # print('String Voltage Calculator:Input processed:')
 
 
+
     weather, info = pvtoolslib.get_s3_weather_data(
         filedata_closest['filename'].iloc[0])
 
 
-    df = vocmax.simulate_system(weather, info,module,
+    df = vocmax.simulate_system(weather, info, module,
                                    racking_parameters,
                                 thermal_model)
 
-    # print('String Voltage Calculator:Simulation complete:')
+
+
+
     # df_temp = pd.DataFrame(info,index=[0])
     # df_temp = df.copy()
 
