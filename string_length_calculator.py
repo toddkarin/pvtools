@@ -749,7 +749,7 @@ layout = dbc.Container([
                                color="secondary")
                 ], width='auto'),
                 dbc.Col([dbc.Input(id='additional_safety_factor',
-                                   value='1.0',
+                                   value='1.6',
                                    type='text',
                                    style={'max-width': 200}
                                    )
