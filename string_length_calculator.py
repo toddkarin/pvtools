@@ -1033,7 +1033,7 @@ def update_additional_safety_factor(n_clicks, module_parameter_input_type):
 
     add_diode_factor = module_parameter_input_type == 'manual'
 
-    additional_safety_factor = 1.0 + add_diode_factor * 0.6
+    additional_safety_factor = 1.0 + 0.6 + add_diode_factor * 0.4
 
     return ['{:1.1f}'.format(additional_safety_factor), '']
 
