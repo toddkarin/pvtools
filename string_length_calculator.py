@@ -315,7 +315,7 @@ layout = dbc.Container([
                                                  'cells_in_series', 'n_diode',
                                                  'efficiency',
                                                  'Module bifaciality coefficient'],
-                                     'pvSyst': ['Voc', 'muVocSpec*1000', '0',
+                                     'pvSyst': ['Voc', 'muVocSpec/1000', '0',
                                                 'NCelS', 'Gamma',
                                                 'Imp*Vmp/Height/Width',
                                                 'BifacialityFactor']
