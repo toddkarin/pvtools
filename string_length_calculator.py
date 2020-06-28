@@ -296,9 +296,39 @@ layout = dbc.Container([
                     dbc.Card(
                         dbc.CardBody(
                             [
-                                dcc.Markdown("""###### Manually set module parameters.
+                                dcc.Markdown("""Manually set module parameters.
                                 
                                 """),
+                                html.Details([
+                                    html.Summary(
+                                        "What about using PVsyst data from a PAN file?"),
+                                    html.Div([
+                                        dcc.Markdown("""In order to use a PAN 
+                                        file from PVsyst, use the following 
+                                        translation: 
+                                
+                                    """),
+                                    ], style={'marginLeft': 50}
+                                    ),
+                                    dbc.Table.from_dataframe(pd.DataFrame(
+                                    {'pvtools': ['Voco', 'Bvoco', 'Mbvoc',
+                                                 'cells_in_series', 'n_diode',
+                                                 'efficiency',
+                                                 'Module bifaciality coefficient'],
+                                     'pvSyst': ['Voc', 'muVocSpec*1000', '0',
+                                                'NCelS', 'Gamma',
+                                                'Imp*Vmp/Height/Width',
+                                                'BifacialityFactor']
+                                     }),
+                                    striped=False,
+                                    bordered=True,
+                                    hover=True,
+                                    index=False,
+                                    size='sm',
+                                    style={
+                                        'font-size': '0.8rem'}),
+                                ]),
+
                                 dbc.Label("""Module name"""),
                                 dbc.Input(id='module_name_manual',
                                           value='Custom Module',
@@ -1098,11 +1128,11 @@ def update_output_div(n_clicks, lat, lon, module_parameter_input_type,
             leads to NSRDB data uncertainty of {:2.1%}.
             
             """.format(lat,
-               lon,
-               temperature_error,
-               Bvoco / Voco * 100,
-               temperature_error * np.abs(Bvoco / Voco),
-               )
+                       lon,
+                       temperature_error,
+                       Bvoco / Voco * 100,
+                       temperature_error * np.abs(Bvoco / Voco),
+                       )
             ]
 
 
@@ -1886,8 +1916,8 @@ def run_simulation(n_clicks, lat, lon, module_parameter_input_type, module_name,
 
     voc_summary_for_plot['plot_voltage'] = voc_summary_for_plot[
                                                'max_module_voltage'] * (
-                                                       1 + voc_summary_for_plot[
-                                                   'safety_factor'])
+                                                   1 + voc_summary_for_plot[
+                                               'safety_factor'])
 
     voc_summary_table = voc_summary.rename(index=str, columns={
         'max_module_voltage': 'Max Module Voltage',
@@ -1895,7 +1925,7 @@ def run_simulation(n_clicks, lat, lon, module_parameter_input_type, module_name,
         'string_design_voltage': 'String Design Voltage',
         'string_length': 'String Length',
         'short_note': 'Note'
-        })
+    })
 
     # voc_summary_table['Note'] = voc_summary_table['Note'].apply(
     #     lambda s : s.replace('<br>','.  '))
