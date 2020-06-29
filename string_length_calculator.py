@@ -734,7 +734,7 @@ layout = dbc.Container([
                 """.replace('    ', '')),
             html.P(''),
             dcc.Markdown(
-                'Optional safety factor due to extreme cold temperatures, only consider including if using 690.7(A)(3)-P100 standard.'),
+                'Optional safety factor due to extreme cold temperatures, only consider including if using 690.7(A)(3)-P99.5 standard.'),
             dbc.Row([
                 dbc.Col([
                     dbc.Button(id='get_extreme_cold_uncertainty',
