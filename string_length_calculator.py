@@ -534,9 +534,9 @@ layout = dbc.Container([
                 id='open_circuit_rise',
                 options=[
                     {'label': 'Open-circuit temperature rise included',
-                     'value': 0},
-                    {'label': 'Open-circuit temperature rise excluded',
                      'value': 1},
+                    {'label': 'Open-circuit temperature rise excluded',
+                     'value': 0},
                 ],
                 value=0,
                 style={'max-width': 500}
