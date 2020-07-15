@@ -460,14 +460,13 @@ layout = dbc.Container([
                                     id='racking_model',
                                     options=[
                                         {'label': 'open rack glass polymer',
-                                         'value': 'open_rack_cell_polymerback'},
+                                         'value': 'open_rack_glass_polymer'},
                                         {'label': 'open rack glass glass',
-                                         'value': 'open_rack_cell_glassback'},
+                                         'value': 'open_rack_glass_glass'},
                                         {'label': 'close mount glass glass',
-                                         'value': 'roof_mount_cell_glassback'},
-                                        {
-                                            'label': 'insulated back glass polymer',
-                                            'value': 'insulated_back_polymerback'},
+                                         'value': 'close_mount_glass_glass'},
+                                        {'label': 'insulated back glass polymer',
+                                            'value': 'insulated_back_glass_polymer'},
                                     ],
                                     value='open_rack_cell_polymerback',
                                     style={'max-width': 500}
@@ -1393,9 +1392,11 @@ def update_map_callback(n_clicks, lat, lon):
               [Input('racking_model', 'value')])
 def update_Voco(racking_model):
     # print('Racking model changed')
-    return str(pvlib.pvsystem.TEMP_MODEL_PARAMS['sapm'][racking_model][0]), \
-           str(pvlib.pvsystem.TEMP_MODEL_PARAMS['sapm'][racking_model][1]), \
-           str(pvlib.pvsystem.TEMP_MODEL_PARAMS['sapm'][racking_model][2])
+
+    param = pvlib.temperature._temperature_model_params('sapm',racking_model)
+    return str(param['a']), \
+           str(param['b']), \
+           str(param['c'])
 
 
 @app.callback(
@@ -1518,7 +1519,7 @@ def plot_lookup_IV(module_name):
     module_parameters['name'] = module_name
     module_parameters['aoi_model'] = 'ashrae'
     module_parameters['ashrae_iam_param'] = 0.05
-    module_parameters['iv_model'] = 'desoto'
+    module_parameters['iv_model'] = 'sapm'
 
     info_df = pd.DataFrame.from_dict({
         'Parameter': list(module_parameters.keys())
@@ -1776,7 +1777,6 @@ def run_simulation(n_clicks, lat, lon, module_parameter_input_type, module_name,
         'efficiency': efficiency,
         'thermal_model_input_type': thermal_model_input_type,
         'racking_model': racking_model,
-        'efficiency': efficiency,
         'a': a,
         'b': b,
         'DT': DT,
@@ -1790,7 +1790,7 @@ def run_simulation(n_clicks, lat, lon, module_parameter_input_type, module_name,
         'backtrack': str(backtrack),
         'ground_coverage_ratio': ground_coverate_ratio,
         'string_design_voltage': string_design_voltage,
-        'iv_model': 'desoto',
+        'iv_model': 'sapm',
         'safety_factor': safety_factor,
         'lookup_is_bifacial': lookup_is_bifacial,
         'manual_is_bifacial': manual_is_bifacial,
@@ -2542,6 +2542,7 @@ def download_simulation_data():
     else:
         print('input type not understood.')
 
+    print('Open circuit rise: {}'.format(p['open_circuit_rise']))
     if p['thermal_model_input_type'] == 'lookup':
 
         thermal_model = {
@@ -2559,6 +2560,8 @@ def download_simulation_data():
         }
     else:
         print('Verbose:Racking model not understood')
+
+    print('Thermal model: ', thermal_model)
 
     if p['mount_type'] == 'fixed_tilt':
         racking_parameters = {
