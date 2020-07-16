@@ -2511,28 +2511,12 @@ def make_voc_histogram_figure(voc_hist_x, voc_hist_y, voc_summary_for_plot,
               [State('results-store', 'data'),
                ])
 def make_voc_histogram_callback(annotation_voc_histogram_choice, ts, results):
-# def make_voc_histogram_callback(ts, results):
-    print('Make voc histogram:')
-    # print(annotation_voc_histogram_choice)
-    # print(ts)
-    # print(results)
     if ts is None:
         raise PreventUpdate
 
         return []
-    #
 
-
-
-
-    # print(voc_hist_json)
-
-    # voc_summary_for_plot = pd.read_json(results)
     voc_summary_for_plot = pd.read_json(results['voc_summary_for_plot_json'])
-    # voc_hist = pd.read_json(voc_hist_json)
-
-
-
 
     return make_voc_histogram_figure(results['voc_hist_x'],
                                      results['voc_hist_y'],
