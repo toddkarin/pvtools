@@ -4,25 +4,25 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
 # import dash_table
-import plotly.colors
-import plotly.graph_objs as go
+# import plotly.colors
+# import plotly.graph_objs as go
 # import plotly.plotly as py
 # from flask_caching import Cache
 from dash.dependencies import Input, Output, State
-import vocmaxlib
-import numpy as np
-import pvlib
-import nsrdbtools
+# import vocmaxlib
+# import numpy as np
+# import pvlib
+# import nsrdbtools
 import pandas as pd
 # import uuid
 # import os
 # import flask
 # import json
 # import time
-import datetime
+# import datetime
 import io
-import pvtoolslib
-import urllib
+# import pvtoolslib
+# import urllib
 
 
 from app import app
