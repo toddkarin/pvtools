@@ -14,6 +14,7 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
+from dash.exceptions import PreventUpdate
 # import dash_table
 import plotly.colors
 import plotly.graph_objs as go
@@ -29,7 +30,7 @@ import pandas as pd
 # import uuid
 # import os
 import flask
-# import json
+import json
 # import time
 import datetime
 import io
@@ -311,22 +312,24 @@ layout = dbc.Container([
                                     ], style={'marginLeft': 50}
                                     ),
                                     dbc.Table.from_dataframe(pd.DataFrame(
-                                    {'pvtools': ['Voco', 'Bvoco', 'Mbvoc',
-                                                 'cells_in_series', 'n_diode',
-                                                 'efficiency',
-                                                 'Module bifaciality coefficient'],
-                                     'pvSyst': ['Voc', 'muVocSpec/1000', '0',
-                                                'NCelS', 'Gamma',
-                                                'Imp*Vmp/Height/Width',
-                                                'BifacialityFactor']
-                                     }),
-                                    striped=False,
-                                    bordered=True,
-                                    hover=True,
-                                    index=False,
-                                    size='sm',
-                                    style={
-                                        'font-size': '0.8rem'}),
+                                        {'pvtools': ['Voco', 'Bvoco', 'Mbvoc',
+                                                     'cells_in_series',
+                                                     'n_diode',
+                                                     'efficiency',
+                                                     'Module bifaciality coefficient'],
+                                         'pvSyst': ['Voc', 'muVocSpec/1000',
+                                                    '0',
+                                                    'NCelS', 'Gamma',
+                                                    'Imp*Vmp/Height/Width',
+                                                    'BifacialityFactor']
+                                         }),
+                                        striped=False,
+                                        bordered=True,
+                                        hover=True,
+                                        index=False,
+                                        size='sm',
+                                        style={
+                                            'font-size': '0.8rem'}),
                                 ]),
 
                                 dbc.Label("""Module name"""),
@@ -465,10 +468,11 @@ layout = dbc.Container([
                                          'value': 'open_rack_glass_glass'},
                                         {'label': 'close mount glass glass',
                                          'value': 'close_mount_glass_glass'},
-                                        {'label': 'insulated back glass polymer',
+                                        {
+                                            'label': 'insulated back glass polymer',
                                             'value': 'insulated_back_glass_polymer'},
                                     ],
-                                    value='open_rack_cell_polymerback',
+                                    value='open_rack_glass_polymer',
                                     style={'max-width': 500}
                                 ),
                                 dbc.FormText("""Standard coefficents for 
@@ -815,7 +819,9 @@ layout = dbc.Container([
         dbc.CardHeader('Calculation'),
         dbc.CardBody([
             html.P('Press "Calculate" to run Voc calculation (~10 seconds)'),
-            dbc.Button(id='submit-button', n_clicks=0, children='Calculate',
+            dbc.Button(id='submit-button',
+                       n_clicks=0,
+                       children='Calculate',
                        color="secondary"),
         ])
     ]),
@@ -840,6 +846,7 @@ layout = dbc.Container([
     dcc.Loading(html.Div(id='graphs')),
     # dcc.Store(id='annotation-store'),
     dcc.Store(id='results-store'),
+    # html.Div(id='voc-hist-results-store', style={'display': 'none'}),
     # dbc.Button('Download results as csv',id='download_csv',n_clicks=0),
     # html.Div(id='graphs'),
 
@@ -1292,7 +1299,7 @@ def update_map_callback(n_clicks, lat, lon):
     # print('Updating the map')
     # if n_clicks>0:
     # print('Verbose:String Voltage Calculator:new weather location:')
-
+    print('Getting map data...')
     filedata = pvtoolslib.get_s3_filename_df()
 
     filedata_closest = nsrdbtools.find_closest_datafiles(float(lat), float(lon),
@@ -1365,7 +1372,7 @@ def update_map_callback(n_clicks, lat, lon):
                 borderwidth=2
             )
         )}
-
+    print('Map done.')
     return map_figure, dict(scrollZoom=True)
 
 
@@ -1393,10 +1400,10 @@ def update_map_callback(n_clicks, lat, lon):
 def update_Voco(racking_model):
     # print('Racking model changed')
 
-    param = pvlib.temperature._temperature_model_params('sapm',racking_model)
+    param = pvlib.temperature._temperature_model_params('sapm', racking_model)
     return str(param['a']), \
            str(param['b']), \
-           str(param['c'])
+           str(param['deltaT'])
 
 
 @app.callback(
@@ -1655,7 +1662,8 @@ def get_weather_data(lat, lon):
 
 
 @app.callback([Output('graphs', 'children'),
-               Output('results-store', 'children'),
+               Output('results-store', 'data'),
+               # Output('voc-hist-results-store', 'children'),
                ],
               [Input('submit-button', 'n_clicks')
                ],
@@ -1755,11 +1763,15 @@ def run_simulation(n_clicks, lat, lon, module_parameter_input_type, module_name,
 
     """
     # def run_simulation(*argv):
-
+    print('Calback: run_simulation()')
+    print('n_clicks: ', n_clicks)
     if n_clicks < 1:
-        # print('Not running simulation.')
+
+        raise PreventUpdate
+
+        print('Not running simulation.')
         return [
-            [], []
+            [], {'simulation-performed':False}
         ]
 
     all_params = {
@@ -2395,12 +2407,22 @@ def run_simulation(n_clicks, lat, lon, module_parameter_input_type, module_name,
         ]),
     ]
 
-    return [
-        return_layout,
-        dict(voc_hist_x=voc_hist_x,
+    print('voc_summary_for_plot storage values: ')
+    print(voc_summary_for_plot)
+    results_store = dict(voc_hist_x=voc_hist_x,
              voc_hist_y=voc_hist_y,
              voc_summary_for_plot_json=voc_summary_for_plot.to_json()
              )
+
+    # results_store = {'am_i_cool': True}
+    # print(voc_summary_for_plot.to_json())
+    # voc_hist_store = pd.DataFrame({'voc_hist_x': voc_hist_x,
+    #                                'voc_hist_y': voc_hist_y})
+    # print(voc_hist_x)
+
+    return [
+        return_layout,
+        results_store,
     ]
 
 
@@ -2482,11 +2504,35 @@ def make_voc_histogram_figure(voc_hist_x, voc_hist_y, voc_summary_for_plot,
 
 
 @app.callback(Output('Voc-histogram-div', 'children'),
-              [Input('annotation_voc_histogram', 'value')
+              [
+                Input('annotation_voc_histogram', 'value'),
+               Input('results-store', 'modified_timestamp')
                ],
-              [State('results-store', 'children')])
-def plot_lookup_IV(annotation_voc_histogram_choice, results):
+              [State('results-store', 'data'),
+               ])
+def make_voc_histogram_callback(annotation_voc_histogram_choice, ts, results):
+# def make_voc_histogram_callback(ts, results):
+    print('Make voc histogram:')
+    # print(annotation_voc_histogram_choice)
+    # print(ts)
+    # print(results)
+    if ts is None:
+        raise PreventUpdate
+
+        return []
+    #
+
+
+
+
+    # print(voc_hist_json)
+
+    # voc_summary_for_plot = pd.read_json(results)
     voc_summary_for_plot = pd.read_json(results['voc_summary_for_plot_json'])
+    # voc_hist = pd.read_json(voc_hist_json)
+
+
+
 
     return make_voc_histogram_figure(results['voc_hist_x'],
                                      results['voc_hist_y'],
@@ -2542,12 +2588,12 @@ def download_simulation_data():
     else:
         print('input type not understood.')
 
-    print('Open circuit rise: {}'.format(p['open_circuit_rise']))
+
     if p['thermal_model_input_type'] == 'lookup':
 
         thermal_model = {
             'named_model': p['racking_model'],
-            'open_circuit_rise': p['open_circuit_rise']
+            'open_circuit_rise': float(p['open_circuit_rise'])>0.5
         }
 
     elif p['thermal_model_input_type'] == 'manual':
@@ -2556,7 +2602,7 @@ def download_simulation_data():
             'a': float(p['a']),
             'b': float(p['b']),
             'deltaT': float(p['DT']),
-            'open_circuit_rise': float(p['open_circuit_rise']),
+            'open_circuit_rise': float(p['open_circuit_rise'])>0.5,
         }
     else:
         print('Verbose:Racking model not understood')
