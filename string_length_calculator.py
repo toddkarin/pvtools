@@ -2648,6 +2648,8 @@ def download_simulation_data():
     df['effective_irradiance'] = df['effective_irradiance'].map(
         lambda x: '%.0f' % x)
 
+
+    pvtools_info = {'PVTOOLS version': pvtoolslib.version}
     # print('String Voltage Calculator:df made:')
 
     # Create DF
@@ -2657,7 +2659,7 @@ def download_simulation_data():
     # Convert DF
     str_io = io.StringIO()
     pd.DataFrame(
-        {**info, **module, **thermal_model, **racking_parameters},
+        {**pvtools_info, **info, **module, **thermal_model, **racking_parameters},
         index=['']).to_csv(str_io, sep=",", index=False)
     # pd.DataFrame(module_parameters, index=['']).to_csv(str_io, sep=",")
     # pd.DataFrame(racking_parameters, index=['']).to_csv(str_io, sep=",")
