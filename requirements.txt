@@ -41,4 +41,4 @@ traitlets==4.3.2
 urllib3==1.24.2
 Werkzeug==0.15.3
 pvcz==0.2.3
-vocmax==0.0.15
+vocmax==0.0.16
