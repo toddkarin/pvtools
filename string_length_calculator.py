@@ -1230,12 +1230,18 @@ def sum_safety_factor(nsrdb_weather_data_safety_factor,
     if extreme_cold_include == None:
         extreme_cold_include = 0
 
-    safety_factor = float(nsrdb_weather_data_safety_factor) + \
-                    float(extreme_cold_include) * float(
-        extreme_cold_uncertainty) + \
-                    float(additional_safety_factor)
+    try:
 
-    return ['{:1.1f}'.format(safety_factor)]
+        safety_factor = float(nsrdb_weather_data_safety_factor) + \
+                    float(extreme_cold_include) * float(
+            extreme_cold_uncertainty) + \
+                    float(additional_safety_factor)
+        safety_factor_str = '{:1.1f}'.format(safety_factor)
+    except:
+        PreventUpdate
+        safety_factor_str = ''
+
+    return [safety_factor_str]
 
 
 # Callback for finding closest lat/lon in database.
@@ -1959,7 +1965,8 @@ def run_simulation(n_clicks, lat, lon, module_parameter_input_type, module_name,
          'String Length', 'Cell Temperature', 'POA Irradiance', 'Note']]
 
     info['pvtoolslib version'] = pvtoolslib.version
-    summary_text = vocmax.make_simulation_summary(df, info,
+    summary_text = vocmax.make_simulation_summary(df,
+                                                  info,
                                                   module,
                                                   racking_parameters,
                                                   thermal_model,
