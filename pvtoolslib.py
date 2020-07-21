@@ -28,7 +28,7 @@ import os
 #     import pickle
 #
 
-version = '0.0.6'
+__version__ = '0.0.7'
 contact_email = 'pvtools.lbl@gmail.com'
 
 # sandia_modules = pvlib.pvsystem.retrieve_sam('SandiaMod')
