@@ -956,7 +956,8 @@ layout = dbc.Container([
     the U.S. Department of Energy, Office of Energy Efficiency and Renewable 
     Energy, Solar Energy Technologies Office. Lawrence Berkeley National 
     Laboratory is funded by the DOE under award DE-AC02-05CH11231 """),
-    html.P('PVTOOLS Version ' + pvtoolslib.__version__),
+    html.P('PVTOOLS version ' + pvtoolslib.__version__),
+    html.P('vocmax version ' + vocmax.__version__),
     html.P('Author: Todd Karin'),
     html.P('Contact: ' + pvtoolslib.contact_email)
 ],
@@ -2665,7 +2666,8 @@ def download_simulation_data():
         lambda x: '%.0f' % x)
 
 
-    pvtools_info = {'PVTOOLS version': pvtoolslib.__version__}
+    pvtools_info = {'PVTOOLS version': pvtoolslib.__version__,
+                    'vocmax version':vocmax.__version__}
     # print('String Voltage Calculator:df made:')
 
     # Create DF
