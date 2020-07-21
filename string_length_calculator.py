@@ -2549,6 +2549,8 @@ def download_simulation_data():
     filedata_closest = nsrdbtools.find_closest_datafiles(float(p['lat']),
                                                          float(p['lon']),
                                                          filedata)
+    print('Download simulation data:')
+    print(p)
 
     if p['module_parameter_input_type'] == 'lookup':
         cec_parameters = pvtoolslib.cec_modules[p['module_name']].to_dict()
@@ -2560,7 +2562,7 @@ def download_simulation_data():
         sapm_parameters['iv_model'] = 'sapm'
         module = {**sapm_parameters, **cec_parameters}
 
-        module['is_bifacial'] = p['lookup_is_bifacial'] == 'True'
+        module['is_bifacial'] = float(p['lookup_is_bifacial'])>0.5
         module['bifaciality_factor'] = float(p['lookup_bifaciality'])
 
 
@@ -2578,7 +2580,7 @@ def download_simulation_data():
             'iv_model': 'sapm',
             'FD': float(p['FD']),
             'efficiency': float(p['efficiency']),
-            'is_bifacial': p['manual_is_bifacial'] == 'True',
+            'is_bifacial': float(p['manual_is_bifacial'])>0.5,
             'bifaciality_factor': float(p['manual_bifaciality']),
         }
 
