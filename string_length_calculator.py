@@ -2045,8 +2045,15 @@ def run_simulation(n_clicks, lat, lon, module_parameter_input_type, module_name,
     P99 = np.percentile(df['v_oc'], 99.9)
 
     poa_smooth = np.linspace(1, 1100, 100)
-    T_smooth = 25 + (P99 - vocmax.sapm_voc(poa_smooth, 25, module)) / module[
-        'Bvoco']
+
+    T_smooth = vocmax.sapm_temperature_to_get_voc(poa_smooth,
+                                                  P99,
+                                                  Voco=module['Voco'],
+                                                  Bvoco=module['Bvoco'],
+                                                  diode_factor=module['n_diode'],
+                                                  cells_in_series=module['cells_in_series'])
+
+
 
     # Plotting
     max_pos = np.argmax(np.array(df['v_oc']))
